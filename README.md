@@ -13,7 +13,7 @@ This is a monorepo containing:
 ## 🛠 Tech Stack
 
 ### Backend
-- **Ruby 3.4.8** & **Rails 8.1**
+- **Ruby 3.4.8** on **Rails 8.1**
 - **GraphQL**: Type-safe API with self-documenting schema.
 - **Authentication**: JWT-based, secured with `HttpOnly`, `SameSite=Strict` cookies.
 - **Database**: PostgreSQL (default Rails 8 config).
