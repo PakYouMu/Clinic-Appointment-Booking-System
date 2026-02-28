@@ -61,20 +61,26 @@ If you want to work on only one part of the monorepo, you can use these shortcut
 
 ## Hosting Strategy
 
-### **Frontend (Vercel)**
-- Deploy `client` and `admin` as two separate Vercel projects pointing to this same repository.
-- Set the **Root Directory** settings in Vercel to `client` and `admin` respectively.
-- Use subdomains (e.g., `app.example.com` and `admin.example.com`).
+### **Frontends (Render)**
+- **Client & Admin**: Deploy as two separate **Static Sites** on Render.
+- **Root Directory**: Set to `client` for the first and `admin` for the second.
+- **Build Command**: `npm install && npm run build`.
+- **Publish Directory**: `dist`.
+- **Custom Domains**: Point your two domain slots to these sites (e.g., `www.client.example.com` and `www.admin.example.com`).
 
-### **Backend (Render / Railway)**
-- Deploy the `backend` folder as a Web Service.
-- Connect a managed PostgreSQL database.
-- Ensure your production URLs are added to `config/initializers/cors.rb`.
+### **Backend (Railway / Fly.io / Railway)**
+- **Rails API**: Deploy the `backend` folder as a Web Service.
+- **Database**: Use a managed PostgreSQL instance provided by the platform.
+- **Environment Variables**:
+  - `DATABASE_URL`: Your Postgres connection string.
+  - `SECRET_KEY_BASE`: A long, random string for JWT signing.
+  - `FRONTEND_URL`: `https://www.client.example.com`
+  - `ADMIN_FRONTEND_URL`: `https://www.admin.example.com`
 
-### **Render (Hobby Tier)**
-Render allows up to 2 custom domains on the hobby tier.
-1. Use one for your API (`api.example.com`).
-2. Use Vercel for the frontends to save Render's domain slots and take advantage of Vercel's superior edge network.
+### **Why this works:**
+1. **Render (Hobby)**: You use your 2 custom domain slots for the two frontends, ensuring your high-traffic user site and your admin panel both look professional.
+2. **External Backend**: By hosting the API elsewhere, you avoid hitting Render's "Static Site" limits and can scale the Rails process independently.
+3. **Security**: Both frontends will securely communicate with the external API via GraphQL, provided the `cors.rb` configuration is updated with the production URLs.
 
 ## Authentication Flow
 
