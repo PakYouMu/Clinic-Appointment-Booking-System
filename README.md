@@ -2,7 +2,7 @@
 
 A secure, performance-oriented monorepo boilerplate featuring a Rails 8 GraphQL API and two separate Vue 3 frontends (Client and Admin).
 
-## 🚀 Architecture
+## Architecture
 
 This is a monorepo containing:
 
@@ -26,36 +26,57 @@ This is a monorepo containing:
 - **Shadcn Vue**: High-quality, accessible UI components.
 - **Vue Router**: Client-side routing with authentication guards.
 
-## 🏁 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - Ruby 3.4.8
 - Node.js (Latest LTS)
 - PostgreSQL
 
-### 2. Setup Backend
+### 2. Setup (Automatic)
+Install dependencies for all three projects at once from the root directory:
 ```bash
-cd backend
-bundle install
-bin/rails db:prepare
-bin/rails server -p 3000
+npm run install:all
 ```
 
-### 3. Setup Client (Port 5173)
+### 3. Launching the Project
+
+#### **All-in-one (Recommended)**
+Start the backend and both frontends simultaneously with a single command:
 ```bash
-cd client
-npm install
 npm run dev
 ```
+*Alternatively, use the shell script:* `./launch.sh`
 
-### 4. Setup Admin (Port 5174)
-```bash
-cd admin
-npm install
-npm run dev
-```
+#### **Individual Projects**
+If you want to work on only one part of the monorepo, you can use these shortcuts from the root:
+- **Client only**: `npm run dev:client` (Port 5173)
+- **Admin only**: `npm run dev:admin` (Port 5174)
+- **Backend only**: `npm run dev:backend` (Port 3000)
 
-## 🔐 Authentication Flow
+> [!NOTE]
+> Even though the backend is a **Ruby on Rails** application, the root `package.json` includes the `dev:backend` script as a convenient wrapper for `cd backend && bin/rails s`. You can still run it the "traditional" way if you prefer.
+
+---
+
+## Hosting Strategy
+
+### **Frontend (Vercel)**
+- Deploy `client` and `admin` as two separate Vercel projects pointing to this same repository.
+- Set the **Root Directory** settings in Vercel to `client` and `admin` respectively.
+- Use subdomains (e.g., `app.example.com` and `admin.example.com`).
+
+### **Backend (Render / Railway)**
+- Deploy the `backend` folder as a Web Service.
+- Connect a managed PostgreSQL database.
+- Ensure your production URLs are added to `config/initializers/cors.rb`.
+
+### **Render (Hobby Tier)**
+Render allows up to 2 custom domains on the hobby tier.
+1. Use one for your API (`api.example.com`).
+2. Use Vercel for the frontends to save Render's domain slots and take advantage of Vercel's superior edge network.
+
+## Authentication Flow
 
 The boilerplate uses a secure cookie-based JWT flow:
 1. **Sign Up/In**: Mutation sets an `_vue_boilerplate_token` HttpOnly cookie.
