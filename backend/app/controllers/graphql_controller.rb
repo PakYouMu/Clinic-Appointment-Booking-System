@@ -1,19 +1,22 @@
 # frozen_string_literal: true
 
 class GraphqlController < ApplicationController
-  # If accessing from outside this domain, nullify the session
-  # This allows for outside API access while preventing CSRF attacks,
-  # but you'll have to authenticate your user separately
-  # protect_from_forgery with: :null_session
+  # Include cookie support (not included by default in API-only mode)
+  include ActionController::Cookies
+
+  COOKIE_NAME = "_vue_boilerplate_token"
 
   def execute
     variables = prepare_variables(params[:variables])
     query = params[:query]
     operation_name = params[:operationName]
+
     context = {
-      # Query context goes here, for example:
-      # current_user: current_user,
+      current_user: current_user,
+      set_cookie: ->(token) { set_auth_cookie(token) },
+      clear_cookie: -> { clear_auth_cookie }
     }
+
     result = BackendSchema.execute(query, variables: variables, context: context, operation_name: operation_name)
     render json: result
   rescue StandardError => e
@@ -22,6 +25,31 @@ class GraphqlController < ApplicationController
   end
 
   private
+
+  def current_user
+    token = cookies[COOKIE_NAME]
+    return nil unless token
+
+    payload = AuthToken.decode(token)
+    return nil unless payload
+
+    User.find_by(id: payload[:sub])
+  end
+
+  def set_auth_cookie(token)
+    cookies[COOKIE_NAME] = {
+      value: token,
+      httponly: true,
+      secure: Rails.env.production?,
+      same_site: :strict,
+      expires: 24.hours.from_now,
+      path: "/"
+    }
+  end
+
+  def clear_auth_cookie
+    cookies.delete(COOKIE_NAME, path: "/")
+  end
 
   # Handle variables in form data, JSON body, or a blank value
   def prepare_variables(variables_param)
