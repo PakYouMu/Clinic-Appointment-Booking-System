@@ -62,8 +62,3 @@ The boilerplate uses a secure cookie-based JWT flow:
 2. **Persistence**: The browser automatically sends the cookie with every GraphQL request (via `credentials: 'include'`).
 3. **Guard**: Vue Router checks the `currentUser` query before entering protected routes.
 4. **Sign Out**: Mutation clears the cookie server-side.
-
-## 📖 Learn More
-
-- [**Tech Stack Q&A**](./tasks/tech-stack-qa.md): Detailed explanation of every technology choice.
-- [**Implementation Tasks**](./tasks/tasks-vue-rails-graphql-boilerplate.md): History of the boilerplate build.
