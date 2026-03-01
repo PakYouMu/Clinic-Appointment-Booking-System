@@ -4,10 +4,11 @@
     "private": true,
     "scripts": {
         "install:all": "npm install && (cd client && npm install) && (cd admin && npm install) && (cd backend && bundle install)",
+        "predev": "fuser -k 3000/tcp 5173/tcp 5174/tcp 2>/dev/null || true",
         "dev:backend": "cd backend && bin/rails server -p 3000",
         "dev:client": "cd client && npm run dev",
         "dev:admin": "cd admin && npm run dev",
-        "dev": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:client\" \"npm run dev:admin\""
+        "dev": "concurrently --kill-others-on-fail --prefix \"[{name}]\" --prefix-colors \"bold.cyan,bold.green,bold.magenta\" --names \"backend,client,admin\" \"npm run dev:backend\" \"npm run dev:client\" \"npm run dev:admin\""
     },
     "devDependencies": {
         "concurrently": "^9.1.2"

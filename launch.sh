@@ -3,10 +3,13 @@
 # Kill background processes on exit
 trap "kill 0" EXIT
 
-echo "Launching Vue + Rails Monorepo..."
+# Clean up any zombie processes first
+fuser -k 3000/tcp 5173/tcp 5174/tcp 2>/dev/null || true
+
+echo "🚀 Launching Vue + Rails Monorepo..."
 
 # Launch Backend (Rails)
-echo "Starting Rails Backend on port 3000..."
+echo "💎 Starting Rails Backend on port 3000..."
 cd backend && bin/rails s -p 3000 &
 BACKEND_PID=$!
 
