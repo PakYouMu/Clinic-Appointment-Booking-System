@@ -10,9 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_28_142606) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_13_235837) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "appointments", force: :cascade do |t|
+    t.string "contact_details"
+    t.datetime "created_at", null: false
+    t.bigint "doctor_id", null: false
+    t.datetime "end_datetime"
+    t.bigint "patient_id", null: false
+    t.text "reason_for_visit"
+    t.datetime "start_datetime"
+    t.integer "status", default: 0
+    t.datetime "updated_at", null: false
+    t.index ["doctor_id"], name: "index_appointments_on_doctor_id"
+    t.index ["patient_id"], name: "index_appointments_on_patient_id"
+  end
+
+  create_table "doctors", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "first_name"
+    t.boolean "is_active", default: true, null: false
+    t.string "last_name"
+    t.string "specialty"
+    t.datetime "updated_at", null: false
+  end
 
   create_table "examples", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -20,11 +43,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_28_142606) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "patients", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "phone_number"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_patients_on_user_id"
+  end
+
+  create_table "schedules", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.bigint "doctor_id", null: false
+    t.time "end_time"
+    t.time "start_time"
+    t.datetime "updated_at", null: false
+    t.index ["doctor_id"], name: "index_schedules_on_doctor_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email"
     t.string "password_digest"
+    t.integer "role", default: 0
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
   end
+
+  add_foreign_key "appointments", "doctors"
+  add_foreign_key "appointments", "patients"
+  add_foreign_key "patients", "users"
+  add_foreign_key "schedules", "doctors"
 end

@@ -39,7 +39,7 @@ export function useAuth() {
             }
         })
 
-        const result = data?.signUp
+        const result = data?.adminSignUp
         if (result?.errors?.length) {
             throw new Error(result.errors.join(', '))
         }

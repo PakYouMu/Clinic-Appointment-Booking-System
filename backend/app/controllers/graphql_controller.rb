@@ -10,11 +10,14 @@ class GraphqlController < ApplicationController
     variables = prepare_variables(params[:variables])
     query = params[:query]
     operation_name = params[:operationName]
-
+    
+    app_type = request.headers['HTTP_X_APP_TYPE'] || request.headers['x-app-type'] || 'patient'
+    
     context = {
-      current_user: current_user,
-      set_cookie: ->(token) { set_auth_cookie(token) },
-      clear_cookie: -> { clear_auth_cookie }
+      app_type: app_type,
+      current_user: current_user(app_type),
+      set_cookie: ->(token) { set_auth_cookie(token, app_type) },
+      clear_cookie: -> { clear_auth_cookie(app_type) }
     }
 
     result = BackendSchema.execute(query, variables: variables, context: context, operation_name: operation_name)
@@ -26,18 +29,29 @@ class GraphqlController < ApplicationController
 
   private
 
-  def current_user
-    token = cookies[COOKIE_NAME]
+  def cookie_name_for(app_type)
+    app_type == 'admin' ? "_clinic_admin_token" : "_clinic_patient_token"
+  end
+
+  def current_user(app_type)
+    token = cookies[cookie_name_for(app_type)]
     return nil unless token
 
     payload = AuthToken.decode(token)
     return nil unless payload
 
-    User.find_by(id: payload[:sub])
+    user = User.find_by(id: payload[:sub])
+    
+    # Ensure the user has the correct role for the app they are accessing
+    return nil if user.nil?
+    return nil if app_type == 'admin' && !user.admin?
+    return nil if app_type == 'patient' && !user.patient?
+    
+    user
   end
 
-  def set_auth_cookie(token)
-    cookies[COOKIE_NAME] = {
+  def set_auth_cookie(token, app_type)
+    cookies[cookie_name_for(app_type)] = {
       value: token,
       httponly: true,
       secure: Rails.env.production?,
@@ -47,8 +61,8 @@ class GraphqlController < ApplicationController
     }
   end
 
-  def clear_auth_cookie
-    cookies.delete(COOKIE_NAME, path: "/")
+  def clear_auth_cookie(app_type)
+    cookies.delete(cookie_name_for(app_type), path: "/")
   end
 
   # Handle variables in form data, JSON body, or a blank value

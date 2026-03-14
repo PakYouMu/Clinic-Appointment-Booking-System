@@ -12,11 +12,17 @@ module Mutations
 
     def resolve(email:, password:)
       user = User.find_by(email: email.strip.downcase)
+      
+      app_type = context[:app_type]
 
       if user&.authenticate(password)
-        token = AuthToken.encode(user)
-        set_auth_cookie(token)
-        { user: user, errors: [] }
+        if (app_type == 'admin' && user.admin?) || (app_type == 'patient' && user.patient?)
+          token = AuthToken.encode(user)
+          set_auth_cookie(token)
+          { user: user, errors: [] }
+        else
+          { user: nil, errors: ["Invalid email or password"] } # Return bad credentials even on role mismatch for security
+        end
       else
         { user: nil, errors: ["Invalid email or password"] }
       end

@@ -31,11 +31,18 @@ export function useAuth() {
         }
     }
 
-    async function signUp({ email, password, passwordConfirmation }) {
+    async function signUp({ email, password, passwordConfirmation, firstName, lastName, phoneNumber }) {
         const { data } = await apolloClient.mutate({
             mutation: SIGN_UP_MUTATION,
             variables: {
-                input: { email, password, passwordConfirmation }
+                input: {
+                    email,
+                    password,
+                    passwordConfirmation,
+                    firstName,
+                    lastName,
+                    phoneNumber
+                }
             }
         })
 
@@ -47,7 +54,6 @@ export function useAuth() {
         currentUser.value = result?.user
         return result?.user
     }
-
     async function signIn({ email, password }) {
         const { data } = await apolloClient.mutate({
             mutation: SIGN_IN_MUTATION,
@@ -88,3 +94,4 @@ export function useAuth() {
         signOut
     }
 }
+

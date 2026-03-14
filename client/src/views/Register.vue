@@ -20,6 +20,39 @@
           </div>
 
           <div class="space-y-2">
+            <Label for="register-first-name">First Name</Label>
+            <Input
+              id="register-first-name"
+              v-model="form.firstName"
+              type="text"
+              placeholder="Jane"
+              required
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="register-last-name">Last Name</Label>
+            <Input
+              id="register-last-name"
+              v-model="form.lastName"
+              type="text"
+              placeholder="Doe"
+              required
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label for="register-phone">Phone Number</Label>
+            <Input
+              id="register-phone"
+              v-model="form.phoneNumber"
+              type="tel"
+              placeholder="(555) 123-4567"
+              required
+            />
+          </div>
+
+          <div class="space-y-2">
             <Label for="register-email">Email</Label>
             <Input
               id="register-email"
@@ -100,6 +133,9 @@ const router = useRouter()
 const { signUp } = useAuth()
 
 const form = reactive({
+  firstName: '',
+  lastName: '',
+  phoneNumber: '',
   email: '',
   password: '',
   passwordConfirmation: ''
@@ -118,7 +154,11 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
+    // 2. Pass the new form fields to the signUp function
     await signUp({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      phoneNumber: form.phoneNumber,
       email: form.email,
       password: form.password,
       passwordConfirmation: form.passwordConfirmation

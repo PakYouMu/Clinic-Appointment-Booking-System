@@ -11,6 +11,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
 
     resource "/graphql",
       headers: :any,
+      expose: ['x-app-type'],
       methods: [:post, :options],
       credentials: true
   end
