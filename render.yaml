@@ -30,7 +30,7 @@ services:
     name: mustard-clinic-client
     runtime: static
     buildCommand: "cd client && npm install && npm run build"
-    publishDir: "./client/dist"
+    staticPublishPath: "./client/dist"
     envVars:
       - key: VITE_API_URL
         fromService:
@@ -44,7 +44,7 @@ services:
     name: mustard-clinic-admin
     runtime: static
     buildCommand: "cd admin && npm install && npm run build"
-    publishDir: "./admin/dist"
+    staticPublishPath: "./admin/dist"
     envVars:
       - key: VITE_API_URL
         fromService:
