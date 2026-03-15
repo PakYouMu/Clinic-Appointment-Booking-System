@@ -50,45 +50,63 @@
           <Button variant="outline" @click="$router.push('/doctors')">Find a Doctor</Button>
         </div>
 
-        <div v-else class="grid gap-6 md:grid-cols-2">
-          <Card v-for="appt in upcomingAppointments" :key="appt.id" class="border-primary/20 shadow-md relative overflow-hidden group">
-            <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-            <CardHeader class="pb-3">
-              <div class="flex justify-between items-start mb-1">
-                <span class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">Booked</span>
-              </div>
-              <CardTitle class="text-xl">Dr. {{ appt.doctor.firstName }} {{ appt.doctor.lastName }}</CardTitle>
-              <CardDescription class="whitespace-normal">{{ appt.doctor.specialty }}</CardDescription>
-            </CardHeader>
-            <CardContent class="pb-4 space-y-3">
-              <div class="flex items-center gap-3 text-sm">
-                  <div class="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <CalendarDays class="h-4 w-4 text-muted-foreground" />
-                  </div>
-                 <div>
-                   <p class="font-medium">{{ formatDate(appt.startDatetime) }}</p>
-                   <p class="text-muted-foreground">{{ formatTime(appt.startDatetime) }}</p>
-                 </div>
-              </div>
-              
-              <div v-if="appt.reasonForVisit" class="text-sm bg-muted/40 p-3 rounded border">
-                <p class="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-widest">Reason</p>
-                <p>{{ appt.reasonForVisit }}</p>
-              </div>
-            </CardContent>
-            <CardFooter class="pt-2 border-t bg-muted/10 flex justify-end gap-3">
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                variant-type="outline"
-                @click="openCancelDialog(appt)"
-                :disabled="isCancelling || !isCancellable(appt.startDatetime)"
-                :title="!isCancellable(appt.startDatetime) ? 'Appointments starting within 1 hour cannot be cancelled online.' : ''"
-              >
-                {{ isCancelling === appt.id ? 'Cancelling...' : 'Cancel Appointment' }}
+        <div v-else>
+          <div class="grid gap-4 md:grid-cols-2" style="min-height: 340px;">
+            <Card v-for="appt in paginatedUpcoming" :key="appt.id" class="border-primary/20 shadow-md relative overflow-hidden group">
+              <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+              <CardHeader class="pb-3">
+                <div class="flex justify-between items-start mb-1">
+                  <span class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">Booked</span>
+                </div>
+                <CardTitle class="text-xl">Dr. {{ appt.doctor.firstName }} {{ appt.doctor.lastName }}</CardTitle>
+                <CardDescription class="whitespace-normal">{{ appt.doctor.specialty }}</CardDescription>
+              </CardHeader>
+              <CardContent class="pb-4 space-y-3">
+                <div class="flex items-center gap-3 text-sm">
+                    <div class="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <CalendarDays class="h-4 w-4 text-muted-foreground" />
+                    </div>
+                   <div>
+                     <p class="font-medium">{{ formatDate(appt.startDatetime) }}</p>
+                     <p class="text-muted-foreground">{{ formatTime(appt.startDatetime) }}</p>
+                   </div>
+                </div>
+                
+                <div v-if="appt.reasonForVisit" class="text-sm bg-muted/40 p-3 rounded border">
+                  <p class="text-xs text-muted-foreground font-semibold mb-1 uppercase tracking-widest">Reason</p>
+                  <p>{{ appt.reasonForVisit }}</p>
+                </div>
+              </CardContent>
+              <CardFooter class="pt-2 border-t bg-muted/10 flex justify-end gap-3">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  variant-type="outline"
+                  @click="openCancelDialog(appt)"
+                  :disabled="isCancelling || !isCancellable(appt.startDatetime)"
+                  :title="!isCancellable(appt.startDatetime) ? 'Appointments starting within 1 hour cannot be cancelled online.' : ''"
+                >
+                  {{ isCancelling === appt.id ? 'Cancelling...' : 'Cancel Appointment' }}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+
+          <!-- Upcoming Pagination Footer -->
+          <div v-if="totalUpcomingPages > 1" class="flex items-center justify-between rounded-xl border bg-card px-4 py-3 mt-4">
+            <p class="text-xs text-muted-foreground">
+              Showing {{ (upcomingPage - 1) * UPCOMING_PAGE_SIZE + 1 }}–{{ Math.min(upcomingPage * UPCOMING_PAGE_SIZE, upcomingAppointments.length) }} of {{ upcomingAppointments.length }}
+            </p>
+            <div class="flex items-center gap-1.5">
+              <Button variant="outline" size="icon" class="h-8 w-8" :disabled="upcomingPage <= 1" @click="upcomingPage--">
+                <ChevronLeft class="h-4 w-4" />
               </Button>
-            </CardFooter>
-          </Card>
+              <span class="text-xs font-medium px-2">{{ upcomingPage }} / {{ totalUpcomingPages }}</span>
+              <Button variant="outline" size="icon" class="h-8 w-8" :disabled="upcomingPage >= totalUpcomingPages" @click="upcomingPage++">
+                <ChevronRight class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -103,27 +121,45 @@
           No history found.
         </div>
 
-        <div v-else class="grid gap-4">
-          <div v-for="appt in pastAppointments" :key="appt.id" 
-               class="bg-card border rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors hover:bg-muted/20">
-            
-            <div class="flex items-start gap-4">
-              <div :class="['h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm', statusColors(appt.status).bg]">
-                 <component :is="statusIcon(appt.status)" class="h-5 w-5" />
+        <div v-else>
+          <div class="grid gap-4" style="min-height: 220px;">
+            <div v-for="appt in paginatedPast" :key="appt.id" 
+                 class="bg-card border rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors hover:bg-muted/20">
+              
+              <div class="flex items-start gap-4">
+                <div :class="['h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm', statusColors(appt.status).bg]">
+                   <component :is="statusIcon(appt.status)" class="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 class="font-bold whitespace-normal">Dr. {{ appt.doctor.firstName }} {{ appt.doctor.lastName }}</h4>
+                  <p class="text-sm text-muted-foreground whitespace-normal">{{ appt.doctor.specialty }}</p>
+                  <p class="text-sm text-muted-foreground whitespace-normal">{{ formatDate(appt.startDatetime) }} at {{ formatTime(appt.startDatetime) }}</p>
+                </div>
               </div>
-              <div>
-                <h4 class="font-bold whitespace-normal">Dr. {{ appt.doctor.firstName }} {{ appt.doctor.lastName }}</h4>
-                <p class="text-sm text-muted-foreground whitespace-normal">{{ appt.doctor.specialty }}</p>
-                <p class="text-sm text-muted-foreground whitespace-normal">{{ formatDate(appt.startDatetime) }} at {{ formatTime(appt.startDatetime) }}</p>
+
+              <div class="flex items-center gap-4">
+                <span :class="['px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider border', statusColors(appt.status).badge]">
+                  {{ formatStatus(appt.status) }}
+                </span>
               </div>
-            </div>
 
-            <div class="flex items-center gap-4">
-              <span :class="['px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider border', statusColors(appt.status).badge]">
-                {{ formatStatus(appt.status) }}
-              </span>
             </div>
+          </div>
 
+          <!-- Past Pagination Footer -->
+          <div v-if="totalPastPages > 1" class="flex items-center justify-between rounded-xl border bg-card px-4 py-3 mt-4">
+            <p class="text-xs text-muted-foreground">
+              Showing {{ (pastPage - 1) * PAST_PAGE_SIZE + 1 }}–{{ Math.min(pastPage * PAST_PAGE_SIZE, pastAppointments.length) }} of {{ pastAppointments.length }}
+            </p>
+            <div class="flex items-center gap-1.5">
+              <Button variant="outline" size="icon" class="h-8 w-8" :disabled="pastPage <= 1" @click="pastPage--">
+                <ChevronLeft class="h-4 w-4" />
+              </Button>
+              <span class="text-xs font-medium px-2">{{ pastPage }} / {{ totalPastPages }}</span>
+              <Button variant="outline" size="icon" class="h-8 w-8" :disabled="pastPage >= totalPastPages" @click="pastPage++">
+                <ChevronRight class="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -162,7 +198,9 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle, 
-  Circle 
+  Circle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-vue-next'
 import {
   Card,
@@ -205,6 +243,25 @@ const pastAppointments = computed(() => {
   return appointments.value.filter(a => {
     return new Date(a.startDatetime) < now || a.status !== 'booked'
   })
+})
+
+// Pagination
+const UPCOMING_PAGE_SIZE = 4
+const PAST_PAGE_SIZE = 3
+const upcomingPage = ref(1)
+const pastPage = ref(1)
+
+const totalUpcomingPages = computed(() => Math.ceil(upcomingAppointments.value.length / UPCOMING_PAGE_SIZE))
+const totalPastPages = computed(() => Math.ceil(pastAppointments.value.length / PAST_PAGE_SIZE))
+
+const paginatedUpcoming = computed(() => {
+  const start = (upcomingPage.value - 1) * UPCOMING_PAGE_SIZE
+  return upcomingAppointments.value.slice(start, start + UPCOMING_PAGE_SIZE)
+})
+
+const paginatedPast = computed(() => {
+  const start = (pastPage.value - 1) * PAST_PAGE_SIZE
+  return pastAppointments.value.slice(start, start + PAST_PAGE_SIZE)
 })
 
 // Cancellation handling
