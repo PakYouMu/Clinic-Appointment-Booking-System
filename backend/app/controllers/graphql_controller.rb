@@ -55,7 +55,7 @@ class GraphqlController < ApplicationController
       value: token,
       httponly: true,
       secure: Rails.env.production?,
-      same_site: :strict,
+      same_site: Rails.env.production? ? :none : :lax,
       expires: 24.hours.from_now,
       path: "/"
     }
