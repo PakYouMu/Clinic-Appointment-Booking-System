@@ -47,6 +47,9 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # View emails in the browser instead of sending them
+  gem "letter_opener"
 end
 
 gem "graphql", "~> 2.5"
@@ -56,3 +59,5 @@ gem "rack-cors", "~> 3.0"
 gem "jwt", "~> 2.9"
 
 gem 'dotenv-rails', '~> 3.2'
+
+gem 'rails-erd', '~> 1.7', '>= 1.7.2'

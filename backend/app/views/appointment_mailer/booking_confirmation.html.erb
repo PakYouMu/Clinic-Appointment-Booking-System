@@ -1,5 +1,101 @@
-<h1>Appointment#booking_confirmation</h1>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #374151;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .header h1 {
+        margin: 0;
+        color: #111827;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+      .content {
+        padding: 30px 0;
+      }
+      .details-card {
+        background-color: #f9fafb;
+        border-radius: 8px;
+        padding: 24px;
+        margin-top: 20px;
+      }
+      .detail-row {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .detail-label {
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 14px;
+        text-transform: uppercase;
+      }
+      .detail-value {
+        color: #111827;
+        font-weight: 500;
+      }
+      .footer {
+        text-align: center;
+        padding-top: 30px;
+        border-top: 1px solid #e5e7eb;
+        color: #9ca3af;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Appointment Confirmed</h1>
+      </div>
 
-<p>
-  <%= @greeting %>, find me in app/views/appointment_mailer/booking_confirmation.html.erb
-</p>
+      <div class="content">
+        <p>Hello <strong><%= @patient.full_name %></strong>,</p>
+        <p>This is to confirm that your appointment has been successfully scheduled. Below are the details of your visit:</p>
+
+        <div class="details-card">
+          <div class="detail-row">
+            <span class="detail-label">Doctor</span>
+            <span class="detail-value">Dr. <%= @doctor.full_name %></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Date</span>
+            <span class="detail-value"><%= @appointment.start_datetime.strftime("%A, %B %d, %Y") %></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Time</span>
+            <span class="detail-value"><%= @appointment.start_datetime.strftime("%I:%M %p") %> - <%= @appointment.end_datetime.strftime("%I:%M %p") %></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Specialty</span>
+            <span class="detail-value"><%= @doctor.specialty %></span>
+          </div>
+        </div>
+
+        <p style="margin-top: 24px;">Please arrive 15 minutes before your scheduled time. If you need to cancel or reschedule, please do so at least 1 hour in advance through your dashboard.</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; <%= Time.now.year %> Clinic Appointment Booking System. All rights reserved.</p>
+        <p>This is an automated message, please do not reply.</p>
+      </div>
+    </div>
+  </body>
+</html>

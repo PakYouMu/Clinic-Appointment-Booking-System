@@ -1,3 +1,17 @@
-Appointment#booking_confirmation
+Appointment Confirmed
 
-<%= @greeting %>, find me in app/views/appointment_mailer/booking_confirmation.text.erb
+Hello <%= @patient.full_name %>,
+
+This is to confirm that your appointment has been successfully scheduled.
+
+Details:
+Doctor: Dr. <%= @doctor.full_name %>
+Date: <%= @appointment.start_datetime.strftime("%A, %B %d, %Y") %>
+Time: <%= @appointment.start_datetime.strftime("%I:%M %p") %> - <%= @appointment.end_datetime.strftime("%I:%M %p") %>
+Specialty: <%= @doctor.specialty %>
+
+Please arrive 15 minutes before your scheduled time. If you need to cancel or reschedule, please do so at least 1 hour in advance through your dashboard.
+
+Best regards,
+Clinic Appointment Booking System
+<%= Time.now.year %>

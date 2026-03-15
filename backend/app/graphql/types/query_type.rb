@@ -24,6 +24,8 @@ module Types
       context[:current_user]
     end
     
+    field :available_slots, resolver: Resolvers::AvailableSlots
+    
     # Doctor Queries
     field :doctors, [Types::DoctorType], null: false, description: "Returns a list of all active doctors"
     def doctors
@@ -51,10 +53,8 @@ module Types
         raise GraphQL::ExecutionError, "You must be logged in as a patient to view your appointments."
       end
 
-      # Filter for future appointments only
-      user.patient.appointments
-          .where("start_datetime >= ?", Time.current)
-          .order(start_datetime: :asc)
+      # Return all appointments for dashboard history and upcoming views
+      user.patient.appointments.order(start_datetime: :desc)
     end
 
     # Admin Queries

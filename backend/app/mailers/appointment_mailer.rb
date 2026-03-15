@@ -5,8 +5,13 @@ class AppointmentMailer < ApplicationMailer
   #   en.appointment_mailer.booking_confirmation.subject
   #
   def booking_confirmation
-    @greeting = "Hi"
-
-    mail to: "to@example.org"
+    @appointment = params[:appointment]
+    @patient = @appointment.patient
+    @doctor = @appointment.doctor
+    
+    mail(
+      to: @patient.user.email,
+      subject: "Appointment Confirmation: #{@doctor.full_name} - #{@appointment.start_datetime.strftime('%B %d, %Y')}"
+    )
   end
 end

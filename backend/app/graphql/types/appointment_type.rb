@@ -9,6 +9,7 @@ module Types
     # The new datetime columns we created in the migration
     field :start_datetime, GraphQL::Types::ISO8601DateTime, null: false
     field :end_datetime, GraphQL::Types::ISO8601DateTime, null: false
+    field :contact_number, String, null: true
     
     # Associations
     field :patient, Types::PatientType, null: false

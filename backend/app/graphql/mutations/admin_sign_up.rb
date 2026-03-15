@@ -7,11 +7,18 @@ module Mutations
     argument :email, String, required: true
     argument :password, String, required: true
     argument :password_confirmation, String, required: true
+    argument :admin_secret, String, required: true
 
     field :user, Types::UserType, null: true
     field :errors, [String], null: false
 
-    def resolve(email:, password:, password_confirmation:)
+    def resolve(email:, password:, password_confirmation:, admin_secret:)
+      # Security: Check admin secret
+      expected_secret = ENV['ADMIN_REGISTRATION_SECRET'] || 'admin123'
+      if admin_secret != expected_secret
+        return { user: nil, errors: ["Invalid admin registration secret."] }
+      end
+
       # Sanitize email
       clean_email = email.strip.downcase
 

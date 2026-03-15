@@ -5,12 +5,13 @@ module Mutations
     argument :start_datetime, GraphQL::Types::ISO8601DateTime, required: true
     argument :end_datetime, GraphQL::Types::ISO8601DateTime, required: true
     argument :reason_for_visit, String, required: false
+    argument :contact_number, String, required: true
 
     # What the frontend gets back
     field :appointment, Types::AppointmentType, null: true
     field :errors, [String], null: false
 
-    def resolve(doctor_id:, start_datetime:, end_datetime:, reason_for_visit: nil)
+    def resolve(doctor_id:, start_datetime:, end_datetime:, contact_number:, reason_for_visit: nil)
       user = context[:current_user]
 
       # 1. Security Check: Must be logged in and must be a patient
@@ -24,6 +25,7 @@ module Mutations
         start_datetime: start_datetime,
         end_datetime: end_datetime,
         reason_for_visit: reason_for_visit,
+        contact_number: contact_number,
         status: :booked
       )
 
@@ -32,7 +34,7 @@ module Mutations
         
         # Optionally send the confirmation email asynchronously (so it doesn't slow down the request)
         if defined?(AppointmentMailer)
-          AppointmentMailer.with(appointment: appointment).confirmation_email.deliver_later
+          AppointmentMailer.with(appointment: appointment).booking_confirmation.deliver_later
         end
 
         { appointment: appointment, errors: [] }
