@@ -15,15 +15,9 @@ services:
       - key: RAILS_MASTER_KEY
         sync: false
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: mustard-clinic-client
-          property: url
+        sync: false
       - key: ADMIN_FRONTEND_URL
-        fromService:
-          type: web
-          name: mustard-clinic-admin
-          property: url
+        sync: false
 
   # 2. Patient Portal
   - type: web
@@ -33,11 +27,7 @@ services:
     staticPublishPath: "./client/dist"
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: mustard-clinic-api
-          property: url
-        suffix: "/graphql"
+        sync: false
 
   # 3. Admin Dashboard
   - type: web
@@ -47,11 +37,7 @@ services:
     staticPublishPath: "./admin/dist"
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: mustard-clinic-api
-          property: url
-        suffix: "/graphql"
+        sync: false
 
 databases:
   - name: mustard-clinic-db
