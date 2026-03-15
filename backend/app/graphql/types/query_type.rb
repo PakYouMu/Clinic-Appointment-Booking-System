@@ -92,5 +92,76 @@ module Types
 
       appointments
     end
+
+    field :recent_activities, [Types::RecentActivityType], null: false do
+      description "Returns a list of recent events for the dashboard"
+    end
+
+    def recent_activities
+      user = context[:current_user]
+      unless user&.admin?
+        raise GraphQL::ExecutionError, "You are not authorized to view this data."
+      end
+
+      activities = []
+
+      # 1. New Appointments (last 10)
+      Appointment.includes(:patient, :doctor).order(created_at: :desc).limit(10).each do |a|
+        activities << {
+          id: "new-#{a.id}",
+          type: 'appointment_created',
+          title: "New booking confirmed",
+          description: "#{a.patient.first_name} #{a.patient.last_name} with Dr. #{a.doctor.last_name}",
+          timestamp: a.created_at,
+          icon_type: 'calendar',
+          color: 'blue'
+        }
+      end
+
+      # 2. Updated Appointments (last 10, exclude just created)
+      Appointment.includes(:patient, :doctor)
+                 .where("updated_at > created_at")
+                 .order(updated_at: :desc).limit(10).each do |a|
+        status_text = a.status.humanize
+        color = case a.status
+                when 'completed' then 'green'
+                when 'cancelled' then 'red'
+                when 'no_show' then 'orange'
+                else 'blue'
+                end
+        
+        icon = case a.status
+               when 'completed' then 'check'
+               when 'cancelled' then 'x'
+               else 'clock'
+               end
+
+        activities << {
+          id: "upd-#{a.id}-#{a.updated_at.to_i}",
+          type: 'status_updated',
+          title: "Appointment marked as #{status_text}",
+          description: "Patient: #{a.patient.last_name}, Doctor: #{a.doctor.last_name}",
+          timestamp: a.updated_at,
+          icon_type: icon,
+          color: color
+        }
+      end
+
+      # 3. New Doctors
+      Doctor.order(created_at: :desc).limit(5).each do |d|
+        activities << {
+          id: "doc-#{d.id}",
+          type: 'doctor_added',
+          title: "New specialist onboarded",
+          description: "Dr. #{d.first_name} #{d.last_name} joined as #{d.specialty}",
+          timestamp: d.created_at,
+          icon_type: 'stethoscope',
+          color: 'green'
+        }
+      end
+
+      # Sort all by timestamp descending and return top 6
+      activities.sort_by { |a| a[:timestamp] }.reverse.take(6)
+    end
   end
 end

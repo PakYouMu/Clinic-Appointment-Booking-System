@@ -37,8 +37,9 @@
 
     <!-- Appointments Table -->
     <Card class="border-none shadow-none bg-transparent">
-      <CardContent class="p-0">
-        <div class="relative w-full overflow-auto rounded-xl border bg-card">
+      <CardContent class="p-0 flex flex-col">
+        <!-- Fixed-height table container -->
+        <div class="relative w-full overflow-auto rounded-t-xl border border-b-0 bg-card" style="min-height: 370px;">
           <table class="w-full caption-bottom text-sm">
             <thead class="bg-muted/50">
               <tr class="border-b transition-colors hover:bg-muted/50">
@@ -57,7 +58,7 @@
                 <td colspan="5" class="p-10 text-center text-muted-foreground italic">No appointments match your filters.</td>
               </tr>
               <tr 
-                v-for="appt in appointments" 
+                v-for="appt in paginatedAppointments" 
                 :key="appt.id"
                 class="border-b transition-colors hover:bg-muted/30"
               >
@@ -117,6 +118,39 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination Footer -->
+        <div class="flex items-center justify-between rounded-b-xl border bg-card px-4 py-3">
+          <p class="text-xs text-muted-foreground">
+            <template v-if="!loading && appointments.length > 0">
+              Showing {{ (currentPage - 1) * PAGE_SIZE + 1 }}–{{ Math.min(currentPage * PAGE_SIZE, appointments.length) }} of {{ appointments.length }}
+            </template>
+            <template v-else>
+              No results
+            </template>
+          </p>
+          <div class="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="icon"
+              class="h-8 w-8"
+              :disabled="currentPage <= 1"
+              @click="currentPage--"
+            >
+              <ChevronLeft class="h-4 w-4" />
+            </Button>
+            <span class="text-xs font-medium px-2">{{ currentPage }} / {{ totalPages || 1 }}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              class="h-8 w-8"
+              :disabled="currentPage >= totalPages"
+              @click="currentPage++"
+            >
+              <ChevronRight class="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   </div>
@@ -145,13 +179,13 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_ADMIN_APPOINTMENTS_QUERY, UPDATE_APPOINTMENT_STATUS_MUTATION } from '@/graphql/appointments'
 import { GET_DOCTORS_QUERY } from '@/graphql/doctors'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { CircleX } from 'lucide-vue-next'
+import { CircleX, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -173,6 +207,20 @@ const doctors = computed(() => doctorsResult.value?.doctors || [])
 
 const { result, loading, refetch } = useQuery(GET_ADMIN_APPOINTMENTS_QUERY, filters)
 const appointments = computed(() => result.value?.adminAppointments || [])
+
+// Pagination
+const PAGE_SIZE = 5
+const currentPage = ref(1)
+const totalPages = computed(() => Math.ceil(appointments.value.length / PAGE_SIZE))
+const paginatedAppointments = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return appointments.value.slice(start, start + PAGE_SIZE)
+})
+
+// Reset page when filters or data change
+watch([() => filters.date, () => filters.doctorId], () => {
+  currentPage.value = 1
+})
 
 const resetFilters = () => {
   filters.date = null

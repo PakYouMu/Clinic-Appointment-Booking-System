@@ -1,12 +1,12 @@
 <template>
-  <div class="space-y-8 animate-in fade-in duration-500">
+  <div class="space-y-4 animate-in fade-in duration-500">
     <!-- Header with Stats -->
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
         <p class="text-muted-foreground">Welcome back! Here's what's happening today, {{ todayDisplay }}.</p>
       </div>
-
+      
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card class="bg-card/50 backdrop-blur-md border-primary/10 transition-all hover:border-primary/30 hover:shadow-lg group">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -101,32 +101,39 @@
           <CardDescription>Key events across the clinic portal.</CardDescription>
         </CardHeader>
         <CardContent>
-           <div class="space-y-6">
-             <div class="flex gap-4">
-               <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                 <Star class="h-4 w-4" />
-               </div>
-               <div>
-                 <p class="text-sm font-medium">New specialist onboarded</p>
-                 <p class="text-xs text-muted-foreground">2 hours ago</p>
+           <div v-if="loading" class="space-y-6">
+             <div v-for="i in 3" :key="i" class="flex gap-4 animate-pulse">
+               <div class="h-8 w-8 rounded-full bg-muted shrink-0"></div>
+               <div class="space-y-2 flex-1">
+                 <div class="h-4 bg-muted rounded w-3/4"></div>
+                 <div class="h-3 bg-muted rounded w-1/4"></div>
                </div>
              </div>
-             <div class="flex gap-4">
-               <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                 <Stethoscope class="h-4 w-4" />
+           </div>
+           <div v-else-if="recentActivities.length === 0" class="py-10 text-center text-muted-foreground italic text-sm">
+             No recent activity recorded.
+           </div>
+           <div v-else class="space-y-6">
+             <div 
+               v-for="activity in recentActivities" 
+               :key="activity.id"
+               class="flex gap-4 group"
+             >
+               <div :class="[
+                 'h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110',
+                 activity.color === 'blue' ? 'bg-blue-100 text-blue-600' : 
+                 activity.color === 'green' ? 'bg-green-100 text-green-600' :
+                 activity.color === 'orange' ? 'bg-orange-100 text-orange-600' :
+                 'bg-destructive/10 text-destructive'
+               ]">
+                 <component :is="getIcon(activity.iconType)" class="h-4 w-4" />
                </div>
-               <div>
-                 <p class="text-sm font-medium">Total 24 bookings confirmed</p>
-                 <p class="text-xs text-muted-foreground">Today</p>
-               </div>
-             </div>
-             <div class="flex gap-4 opacity-50">
-               <div class="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                 <Settings class="h-4 w-4" />
-               </div>
-               <div>
-                 <p class="text-sm font-medium">System maintenance completed</p>
-                 <p class="text-xs text-muted-foreground">Yesterday</p>
+               <div class="flex-1 min-w-0">
+                 <p class="text-sm font-medium leading-none mb-1">{{ activity.title }}</p>
+                 <p class="text-xs text-muted-foreground truncate" :title="activity.description">{{ activity.description }}</p>
+                 <p class="text-[10px] text-muted-foreground/60 mt-1 uppercase font-bold tracking-tight">
+                   {{ timeAgo(activity.timestamp) }}
+                 </p>
                </div>
              </div>
            </div>
@@ -139,7 +146,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
-import { GET_ADMIN_APPOINTMENTS_QUERY } from '@/graphql/appointments'
+import { GET_DASHBOARD_DATA } from '@/graphql/dashboard'
 import { Button } from '@/components/ui/button'
 import { 
   CalendarDays, 
@@ -148,7 +155,10 @@ import {
   CircleX, 
   Star, 
   Stethoscope, 
-  Settings 
+  Settings,
+  Calendar,
+  Check,
+  X
 } from 'lucide-vue-next'
 import {
   Card,
@@ -158,10 +168,11 @@ import {
   CardContent,
 } from '@/components/ui/card'
 
-// Fetch ALL appointments (no date filter) so the dashboard has a full picture
-const { result, loading } = useQuery(GET_ADMIN_APPOINTMENTS_QUERY, {})
+// Fetch ALL data for the dashboard
+const { result, loading } = useQuery(GET_DASHBOARD_DATA, {}, { fetchPolicy: 'network-only' })
 
 const todayAppointments = computed(() => result.value?.adminAppointments || [])
+const recentActivities = computed(() => result.value?.recentActivities || [])
 
 const pendingToday = computed(() => todayAppointments.value.filter(a => a.status === 'booked'))
 const completedToday = computed(() => todayAppointments.value.filter(a => a.status === 'completed'))
@@ -171,6 +182,35 @@ const noShowToday = computed(() => todayAppointments.value.filter(a => a.status 
 const todayDisplay = computed(() => {
   return new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 })
+
+const getIcon = (type) => {
+  switch (type) {
+    case 'calendar': return Calendar
+    case 'check': return Check
+    case 'x': return X
+    case 'stethoscope': return Stethoscope
+    case 'star': return Star
+    case 'clock': return Clock
+    default: return Settings
+  }
+}
+
+const timeAgo = (isoStr) => {
+  const date = new Date(isoStr)
+  const seconds = Math.floor((new Date() - date) / 1000)
+
+  let interval = seconds / 31536000
+  if (interval > 1) return Math.floor(interval) + " years ago"
+  interval = seconds / 2592000
+  if (interval > 1) return Math.floor(interval) + " months ago"
+  interval = seconds / 86400
+  if (interval > 1) return Math.floor(interval) + " days ago"
+  interval = seconds / 3600
+  if (interval > 1) return Math.floor(interval) + " hours ago"
+  interval = seconds / 60
+  if (interval > 1) return Math.floor(interval) + " minutes ago"
+  return Math.floor(seconds) + " seconds ago"
+}
 
 const formatTime = (isoStr) => {
   const d = new Date(isoStr)
