@@ -62,7 +62,11 @@ class GraphqlController < ApplicationController
   end
 
   def clear_auth_cookie(app_type)
-    cookies.delete(cookie_name_for(app_type), path: "/")
+    cookies.delete(cookie_name_for(app_type), 
+      path: "/",
+      secure: Rails.env.production?,
+      same_site: Rails.env.production? ? :none : :lax
+    )
   end
 
   # Handle variables in form data, JSON body, or a blank value
