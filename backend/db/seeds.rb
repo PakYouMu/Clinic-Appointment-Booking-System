@@ -1,3 +1,22 @@
+puts "Seeding Users..."
+client_user = User.find_or_create_by!(email: "client@mustard.com") do |u|
+  u.password = "password123"
+  u.role = :patient
+  u.phone_number = "+63 912 345 6789"
+end
+
+User.find_or_create_by!(email: "admin@mustard.com") do |u|
+  u.password = "password123"
+  u.role = :admin
+end
+
+# Create a patient profile for the client user
+Patient.find_or_create_by!(user: client_user) do |p|
+  p.first_name = "Demo"
+  p.last_name = "Patient"
+  p.phone_number = "+63 912 345 6789"
+end
+
 puts "Seeding Doctors..."
 doc1 = Doctor.find_or_create_by!(first_name: "Gregory", last_name: "House") do |d|
   d.specialty = "Diagnostics"
