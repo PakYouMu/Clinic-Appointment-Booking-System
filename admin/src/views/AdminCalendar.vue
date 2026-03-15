@@ -71,8 +71,8 @@
               :key="hour + '-' + dayIdx" 
               :class="['calendar-cell', isToday(day.date) ? 'is-today' : '']"
             >
-              <!-- ≤ 4 appointments: show individual cards -->
-              <template v-if="getAppointmentsForCell(day.date, hour).length <= 4">
+              <!-- Show individual cards only when no overlaps and ≤ 4 -->
+              <template v-if="!shouldGroupCell(day.date, hour)">
                 <div 
                   v-for="appt in getAppointmentsForCell(day.date, hour)" 
                   :key="appt.id"
@@ -93,7 +93,7 @@
                 </div>
               </template>
 
-              <!-- > 4 appointments: show aggregated badge -->
+              <!-- Grouped badge: > 4 appointments OR overlapping start times -->
               <div 
                 v-else
                 class="absolute inset-1 rounded-md bg-primary/10 border border-primary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors"
@@ -360,6 +360,19 @@ const getAppointmentsForCell = (date, hour) => {
     const aDate = new Date(a.startDatetime)
     return formatISO(aDate) === dayStr && aDate.getHours() === hour
   })
+}
+
+// Returns true if a cell should show the grouped badge instead of individual cards
+// Rules: more than 4 appointments, OR any two share the same start minute
+const shouldGroupCell = (date, hour) => {
+  const cellAppts = getAppointmentsForCell(date, hour)
+  if (cellAppts.length > 4) return true
+  if (cellAppts.length <= 1) return false
+
+  // Check if any appointments share the same start minute
+  const minutes = cellAppts.map(a => new Date(a.startDatetime).getMinutes())
+  const uniqueMinutes = new Set(minutes)
+  return uniqueMinutes.size < minutes.length // duplicates exist
 }
 
 const getAppointmentCellStyle = (appt) => {
