@@ -4,7 +4,7 @@ class GraphqlController < ApplicationController
   # Include cookie support (not included by default in API-only mode)
   include ActionController::Cookies
 
-  COOKIE_NAME = "_vue_boilerplate_token"
+  COOKIE_NAME = "_mustard_clinic_token "
 
   def execute
     variables = prepare_variables(params[:variables])

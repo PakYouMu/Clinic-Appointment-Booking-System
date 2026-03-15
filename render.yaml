@@ -1,0 +1,58 @@
+services:
+  # 1. Backend Rails API
+  - type: web
+    name: mustard-clinic-api
+    env: ruby
+    buildCommand: "./backend/bin/render-build.sh"
+    startCommand: "cd backend && bundle exec puma -C config/puma.rb"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mustard-clinic-db
+          property: connectionString
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: static
+          name: mustard-clinic-client
+          property: url
+      - key: ADMIN_FRONTEND_URL
+        fromService:
+          type: static
+          name: mustard-clinic-admin
+          property: url
+
+  # 2. Patient Portal
+  - type: static
+    name: mustard-clinic-client
+    env: static
+    buildCommand: "cd client && npm install && npm run build"
+    staticPublishPath: "./client/dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: mustard-clinic-api
+          property: url
+        suffix: "/graphql"
+
+  # 3. Admin Dashboard
+  - type: static
+    name: mustard-clinic-admin
+    env: static
+    buildCommand: "cd admin && npm install && npm run build"
+    staticPublishPath: "./admin/dist"
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: mustard-clinic-api
+          property: url
+        suffix: "/graphql"
+
+databases:
+  - name: mustard-clinic-db
+    plan: free

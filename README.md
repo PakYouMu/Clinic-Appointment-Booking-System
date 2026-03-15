@@ -72,13 +72,6 @@ If you need to run specific parts of the system:
 
 *Note: You can also use `./launch.sh` for a shell-script based startup.*
 
-## Security & Authentication
-
-Mustard Clinic uses a secure, stateless JWT flow:
-1. **Mutation**: Login/Signup mutations set a `_vue_boilerplate_token` (to be renamed `_mustard_clinic_token` in future updates) as an `HttpOnly` cookie.
-2. **Persistence**: Apollo Client is configured with `credentials: 'include'` to automatically send this cookie.
-3. **Cross-Origin**: CORS is configured to allow requests from the specific frontend domains.
-
 ## Repository Structure
 
 ```text
