@@ -78,13 +78,9 @@
 
     <!-- Main Content wrapper -->
     <main class="flex-1 w-full relative">
-      <router-view v-slot="{ Component, route }">
-        <transition name="fade" mode="out-in">
-          <div :key="route.name" class="h-full">
-            <component :is="Component" />
-          </div>
-        </transition>
-      </router-view>
+      <div class="h-full w-full animate-in fade-in duration-500">
+        <router-view />
+      </div>
     </main>
 
     <!-- Simple Footer -->
@@ -149,14 +145,3 @@ async function handleSignOut() {
 }
 </script>
 
-<style>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
