@@ -117,22 +117,14 @@
         <CardContent class="space-y-6">
           <div class="space-y-2">
             <label class="text-sm font-medium leading-none">Contact Number <span class="text-destructive">*</span></label>
-            <vue-tel-input
-              v-model="phoneInput"
-              :defaultCountry="'PH'"
-              :preferredCountries="['PH', 'US', 'GB', 'JP', 'KR', 'SG']"
-              :inputOptions="{ placeholder: 'Enter phone number', styleClasses: 'vue-tel-input__input' }"
-              :dropdownOptions="{ showSearchBox: true, showFlags: true, showDialCodeInSelection: true }"
-              mode="international"
-              @validate="onPhoneValidate"
-              :class="[
-                'vue-tel-input-custom',
-                isPhoneValid === true ? 'is-valid' : '',
-                isPhoneValid === false && phoneInput ? 'is-invalid' : ''
-              ]"
-            />
-            <p v-if="isPhoneValid === false && phoneInput" class="text-xs text-destructive mt-1">Please enter a valid phone number.</p>
-            <p v-else-if="isPhoneValid === true" class="text-xs text-green-600 mt-1">Valid number: {{ bookingData.contact }}</p>
+            <div class="vue-tel-input-custom" :class="{ 'is-invalid': phoneInput && !isPhoneValid, 'is-valid': phoneInput && isPhoneValid }">
+              <vue-tel-input
+                v-model="phoneInput"
+                v-bind="telInputOptions"
+                @validate="onPhoneValidate"
+              />
+            </div>
+            <p v-if="phoneInput && !isPhoneValid" class="text-[10px] text-destructive italic mt-1">Please enter a valid phone number.</p>
           </div>
           <div class="space-y-2">
             <label for="reason" class="text-sm font-medium leading-none">Reason for Visit <span class="text-destructive">*</span></label>
@@ -272,13 +264,31 @@ const bookingData = ref({
 
 // Phone input state
 const phoneInput = ref('')
-const isPhoneValid = ref(null)
+const isPhoneValid = ref(false)
+const formattedPhone = ref('')
 
-function onPhoneValidate(validation) {
+const telInputOptions = {
+  defaultCountry: 'PH',
+  preferredCountries: ['PH', 'US', 'GB', 'SG', 'AU'],
+  inputOptions: {
+    placeholder: 'Enter phone number',
+    required: true,
+    autocomplete: 'tel'
+  },
+  dropdownOptions: {
+    showDialCodeInList: true,
+    showDialCodeInSelection: true,
+    showFlags: true,
+    showSearchBox: true
+  },
+  mode: 'international'
+}
+
+const onPhoneValidate = (validation) => {
   isPhoneValid.value = validation.valid
-  // Sync the canonical E.164 number if valid, otherwise clear it to prevent junk storage
   if (validation.valid) {
     bookingData.value.contact = validation.number
+    formattedPhone.value = validation.number
   } else {
     bookingData.value.contact = ''
   }
@@ -471,7 +481,7 @@ const submitBooking = async () => {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  z-index: 1;
+  z-index: 100;
   width: 300px;
   max-height: 250px;
   margin-top: 4px;

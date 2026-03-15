@@ -7,12 +7,13 @@ module Mutations
     argument :email, String, required: true
     argument :password, String, required: true
     argument :password_confirmation, String, required: true
+    argument :phone_number, String, required: true
     argument :admin_secret, String, required: true
 
     field :user, Types::UserType, null: true
     field :errors, [String], null: false
 
-    def resolve(email:, password:, password_confirmation:, admin_secret:)
+    def resolve(email:, password:, password_confirmation:, phone_number:, admin_secret:)
       # Security: Check admin secret
       expected_secret = ENV['ADMIN_REGISTRATION_SECRET'] || 'admin123'
       if admin_secret != expected_secret
@@ -26,6 +27,7 @@ module Mutations
         email: clean_email,
         password: password,
         password_confirmation: password_confirmation,
+        phone_number: phone_number,
         role: :admin
       )
 

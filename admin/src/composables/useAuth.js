@@ -31,11 +31,11 @@ export function useAuth() {
         }
     }
 
-    async function signUp({ email, password, passwordConfirmation, adminSecret }) {
+    async function signUp({ email, password, passwordConfirmation, phoneNumber, adminSecret }) {
         const { data } = await apolloClient.mutate({
             mutation: SIGN_UP_MUTATION,
             variables: {
-                input: { email, password, passwordConfirmation, adminSecret }
+                input: { email, password, passwordConfirmation, phoneNumber, adminSecret }
             }
         })
 

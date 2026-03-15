@@ -42,43 +42,42 @@
 
     <!-- Calendar Grid -->
     <Card class="overflow-hidden border-none shadow-xl bg-card/30 backdrop-blur-md">
-      <div class="relative flex flex-col min-h-[600px] overflow-x-auto">
-        <!-- Sticky Day Headers -->
-        <div class="flex border-b sticky top-0 bg-background/80 backdrop-blur-md z-20">
-          <div class="w-20 shrink-0 border-r bg-muted/20"></div>
-          <div v-for="day in weekDays" :key="day.date" 
-               :class="['flex-1 min-w-[120px] p-3 text-center border-r last:border-r-0', isToday(day.date) ? 'bg-primary/5' : '']">
+      <div class="calendar-scroll-container">
+        <div class="calendar-grid" :style="gridTemplateStyle">
+
+          <!-- Top-left corner cell (sticky both ways) -->
+          <div class="calendar-corner"></div>
+
+          <!-- Day header cells (sticky top) -->
+          <div 
+            v-for="day in weekDays" 
+            :key="'header-' + day.date.toISOString()" 
+            :class="['calendar-day-header', isToday(day.date) ? 'is-today' : '']"
+          >
             <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{{ day.label }}</p>
             <p :class="['text-xl font-black leading-none', isToday(day.date) ? 'text-primary' : '']">
               {{ day.date.getDate() }}
             </p>
           </div>
-        </div>
 
-        <!-- Scrollable Grid Body -->
-        <div class="flex-1 flex max-h-[700px] overflow-y-auto relative">
-          <!-- Time Labels -->
-          <div class="w-20 shrink-0 border-r bg-muted/10 sticky left-0 z-10">
-            <div v-for="hour in hours" :key="hour" class="h-20 border-b last:border-b-0 relative">
-               <span class="absolute -top-3 left-0 w-full text-center text-[10px] font-bold text-muted-foreground bg-background/50 backdrop-blur-sm px-1 py-0.5 rounded shadow-sm">
-                 {{ formatTime(hour) }}
-               </span>
+          <!-- Time rows: for each hour, render 1 time-label + 7 day cells -->
+          <template v-for="hour in hours" :key="hour">
+            <!-- Time label cell (sticky left) -->
+            <div class="calendar-time-label">
+              <span>{{ formatTime(hour) }}</span>
             </div>
-          </div>
 
-          <!-- Vertical Day Columns -->
-          <div class="flex-1 flex min-w-max relative">
-            <div v-for="day in weekDays" :key="day.date" 
-                 class="flex-1 min-w-[120px] border-r last:border-r-0 relative bg-grid-slate-100/[0.03]">
-              
-              <!-- Shaded non-working areas (placeholder logic) -->
-              <div v-for="hour in hours" :key="hour" class="h-20 border-b last:border-b-0"></div>
-
-              <!-- Appointment Blocks -->
+            <!-- Day cells for this hour -->
+            <div 
+              v-for="(day, dayIdx) in weekDays" 
+              :key="hour + '-' + dayIdx" 
+              :class="['calendar-cell', isToday(day.date) ? 'is-today' : '']"
+            >
+              <!-- Appointment blocks positioned within the cell if they start this hour -->
               <div 
-                v-for="appt in filterAppointmentsByDay(day.date)" 
+                v-for="appt in getAppointmentsForCell(day.date, hour)" 
                 :key="appt.id"
-                :style="getAppointmentStyle(appt)"
+                :style="getAppointmentCellStyle(appt)"
                 :class="[
                   'absolute left-1 right-1 rounded p-1.5 text-[9px] font-bold border-l-4 shadow-sm transition-all hover:z-30 hover:scale-[1.02] cursor-pointer overflow-hidden',
                   statusColors(appt.status).card
@@ -94,12 +93,12 @@
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
     </Card>
 
-    <!-- Appointment Detail Modal Mock -->
+    <!-- Appointment Detail Modal -->
     <div v-if="selectedAppt" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" @click.self="selectedAppt = null">
       <Card class="w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
         <CardHeader class="pb-2 border-b">
@@ -159,15 +158,40 @@ const changeWeek = (dir) => {
 }
 
 // --- Grid Config ---
-const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] // 8 AM to 6 PM
+const START_HOUR = 7
+const DEFAULT_END_HOUR = 19
+const CELL_HEIGHT = 80
+
+// Dynamic hours: auto-extend if appointments exist past 7 PM
+const hours = computed(() => {
+  let maxHour = DEFAULT_END_HOUR
+  if (appointments.value.length) {
+    for (const appt of appointments.value) {
+      const endDt = appt.endDatetime 
+        ? new Date(appt.endDatetime) 
+        : new Date(new Date(appt.startDatetime).getTime() + 15 * 60000)
+      const endHour = endDt.getHours() + (endDt.getMinutes() > 0 ? 1 : 0)
+      if (endHour > maxHour) maxHour = endHour
+    }
+  }
+  const result = []
+  for (let h = START_HOUR; h <= maxHour; h++) {
+    result.push(h)
+  }
+  return result
+})
+
+const gridTemplateStyle = computed(() => ({
+  gridTemplateColumns: '5rem repeat(7, minmax(120px, 1fr))',
+  gridTemplateRows: `auto repeat(${hours.value.length}, ${CELL_HEIGHT}px)`
+}))
 
 const weekDays = computed(() => {
   const d = new Date(baseDate.value)
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   const monday = new Date(d)
   monday.setDate(diff)
-  // Reset time to midnight to avoid time drift
   monday.setHours(0, 0, 0, 0)
   
   return Array.from({ length: 7 }, (_, i) => {
@@ -192,7 +216,6 @@ const weekRangeDisplay = computed(() => {
 const { result: doctorsRes } = useQuery(GET_DOCTORS_QUERY)
 const doctors = computed(() => doctorsRes.value?.doctors || [])
 
-// Use arrow function for variables to ensure proper reactivity with useQuery
 const { result: apptsRes, loading } = useQuery(
   GET_ADMIN_APPOINTMENTS_QUERY,
   () => ({
@@ -203,9 +226,8 @@ const { result: apptsRes, loading } = useQuery(
 )
 const appointments = computed(() => apptsRes.value?.adminAppointments || [])
 
-// --- Logic & Helpers ---
+// --- Helpers ---
 function formatISO(date) {
-  // Returns YYYY-MM-DD in local timezone
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
@@ -214,33 +236,30 @@ function formatISO(date) {
 
 const isToday = (date) => new Date().toDateString() === date.toDateString()
 
-const filterAppointmentsByDay = (date) => {
+// Get appointments that START within a specific hour for a specific day
+const getAppointmentsForCell = (date, hour) => {
   const dayStr = formatISO(date)
   return appointments.value.filter(a => {
-    // Convert UTC start time to local date for comparison
     const aDate = new Date(a.startDatetime)
-    return formatISO(aDate) === dayStr
+    return formatISO(aDate) === dayStr && aDate.getHours() === hour
   })
 }
 
-const getAppointmentStyle = (appt) => {
+// Position within the cell (relative to the cell's top)
+const getAppointmentCellStyle = (appt) => {
   const start = new Date(appt.startDatetime)
   const end = appt.endDatetime ? new Date(appt.endDatetime) : new Date(start.getTime() + 15 * 60000)
   
-  const hour = start.getHours()
-  const minutes = start.getMinutes()
+  const minuteOffset = start.getMinutes()
+  const topPx = (minuteOffset / 60) * CELL_HEIGHT
   
-  // Grid starts at 8:00, each hour row is 80px tall
-  const topOffset = ((hour - 8) * 80) + (minutes / 60 * 80)
-  
-  // Calculate dynamic height based on actual duration
   const durationMs = end.getTime() - start.getTime()
   const durationMinutes = durationMs / 60000
-  const height = Math.max((durationMinutes / 60) * 80, 20) // Minimum 20px height
+  const heightPx = Math.max((durationMinutes / 60) * CELL_HEIGHT, 20)
   
   return {
-    top: `${Math.max(topOffset, 0)}px`,
-    height: `${height}px`
+    top: `${topPx}px`,
+    height: `${heightPx}px`
   }
 }
 
@@ -269,9 +288,77 @@ const statusColors = (status) => {
 </script>
 
 <style scoped>
-/* Custom grid background effect */
-.bg-grid-slate-100 {
-  background-image: linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 100% 1px;
+/* Scroll container */
+.calendar-scroll-container {
+  max-height: 750px;
+  overflow: auto;
+  position: relative;
+}
+
+/* CSS Grid layout */
+.calendar-grid {
+  display: grid;
+  min-width: max-content;
+}
+
+/* Top-left corner: sticky in both directions */
+.calendar-corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* Day headers: sticky top */
+.calendar-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0.75rem;
+  text-align: center;
+}
+.calendar-day-header:last-of-type {
+  border-right: none;
+}
+.calendar-day-header.is-today {
+  background-color: color-mix(in oklch, var(--primary), transparent 95%);
+}
+
+/* Time label: sticky left */
+.calendar-time-label {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: var(--background);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+.calendar-time-label span {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background-color: var(--background);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+/* Day cells */
+.calendar-cell {
+  position: relative;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.calendar-cell.is-today {
+  background-color: color-mix(in oklch, var(--primary), transparent 97%);
 }
 </style>

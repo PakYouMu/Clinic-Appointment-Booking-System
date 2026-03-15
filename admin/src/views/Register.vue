@@ -63,6 +63,21 @@
             />
           </div>
 
+          <div class="space-y-2">
+            <Label for="register-phone">Phone Number</Label>
+            <div class="vue-tel-input-custom" :class="{ 'is-invalid': phoneTouched && !isPhoneValid, 'is-valid': phoneTouched && isPhoneValid }">
+              <vue-tel-input
+                v-model="form.phoneNumber"
+                v-bind="telInputOptions"
+                @validate="onPhoneValidate"
+                @input="onPhoneInput"
+              />
+            </div>
+            <p v-if="phoneTouched && !isPhoneValid" class="text-[10px] text-destructive italic mt-1">
+              Please enter a valid phone number.
+            </p>
+          </div>
+
           <div class="space-y-2 py-2">
             <div class="flex items-center justify-between">
               <Label for="register-secret" class="text-primary font-bold">Admin Secret Code</Label>
@@ -80,7 +95,7 @@
             </p>
           </div>
 
-          <Button type="submit" class="w-full" size="lg" :disabled="submitting">
+          <Button type="submit" class="w-full" size="lg" :disabled="submitting || !isFormValid">
             <Loader2 v-if="submitting" class="animate-spin mr-2 h-4 w-4" />
             {{ submitting ? 'Authorizing & Creating…' : 'Register Admin Account' }}
           </Button>
@@ -98,9 +113,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { VueTelInput } from 'vue-tel-input'
+import 'vue-tel-input/vue-tel-input.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -122,17 +139,63 @@ const form = reactive({
   email: '',
   password: '',
   passwordConfirmation: '',
+  phoneNumber: '',
   adminSecret: ''
 })
 
 const submitting = ref(false)
 const errorMessage = ref('')
 
+// Phone handling
+const isPhoneValid = ref(false)
+const phoneTouched = ref(false)
+const formattedPhone = ref('')
+
+const telInputOptions = {
+  defaultCountry: 'PH',
+  preferredCountries: ['PH', 'US', 'GB', 'SG', 'AU'],
+  inputOptions: {
+    placeholder: 'Enter phone number',
+    required: true,
+    autocomplete: 'tel'
+  },
+  dropdownOptions: {
+    showDialCodeInList: true,
+    showDialCodeInSelection: true,
+    showFlags: true,
+    showSearchBox: true
+  },
+  mode: 'international'
+}
+
+const onPhoneValidate = (validation) => {
+  isPhoneValid.value = validation.valid
+  if (validation.valid) {
+    formattedPhone.value = validation.number
+  }
+}
+
+const onPhoneInput = () => {
+  phoneTouched.value = true
+}
+
+const isFormValid = computed(() => {
+  return form.email && 
+         form.password && 
+         isPhoneValid.value && 
+         form.password === form.passwordConfirmation && 
+         form.adminSecret
+})
+
 async function handleSubmit() {
   errorMessage.value = ''
 
-  if (form.password !== form.passwordConfirmation) {
-    errorMessage.value = 'Passwords do not match'
+  if (!isFormValid.value) {
+    if (form.password !== form.passwordConfirmation) {
+      errorMessage.value = 'Passwords do not match'
+    } else if (!isPhoneValid.value) {
+      errorMessage.value = 'Please enter a valid phone number'
+    }
     return
   }
 
@@ -142,6 +205,7 @@ async function handleSubmit() {
       email: form.email,
       password: form.password,
       passwordConfirmation: form.passwordConfirmation,
+      phoneNumber: formattedPhone.value,
       adminSecret: form.adminSecret
     })
     router.push({ name: 'Home' })
@@ -152,3 +216,93 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+/* vue-tel-input overrides to match shadcn design system */
+.vue-tel-input-custom {
+  position: relative;
+  width: 100%;
+}
+
+.vue-tel-input-custom :deep(.vue-tel-input) {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  font-size: 0.875rem;
+  height: 2.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: none;
+}
+
+.vue-tel-input-custom :deep(.vue-tel-input:focus-within) {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  border-color: var(--ring);
+}
+
+.vue-tel-input-custom :deep(.vti__input) {
+  background: transparent;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.vue-tel-input-custom :deep(.vti__input::placeholder) {
+  color: var(--muted-foreground);
+}
+
+.vue-tel-input-custom :deep(.vti__dropdown) {
+  background-color: var(--background);
+  border-right: 1px solid var(--input);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  padding: 0 0.5rem;
+}
+
+.vue-tel-input-custom :deep(.vti__dropdown:hover),
+.vue-tel-input-custom :deep(.vti__dropdown.open) {
+  background-color: var(--muted);
+}
+
+.vue-tel-input-custom :deep(.vti__dropdown-list) {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  z-index: 50;
+  width: 300px;
+  max-height: 250px;
+  margin-top: 4px;
+}
+
+.vue-tel-input-custom :deep(.vti__dropdown-item) {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.vue-tel-input-custom :deep(.vti__dropdown-item:hover),
+.vue-tel-input-custom :deep(.vti__dropdown-item.highlighted) {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.vue-tel-input-custom :deep(.vti__search_box) {
+  background-color: var(--background);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  color: var(--foreground);
+  margin: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  width: calc(100% - 1rem);
+}
+
+/* Validation states */
+.vue-tel-input-custom.is-valid :deep(.vue-tel-input) {
+  border-color: oklch(0.627 0.194 149.214); /* success color */
+}
+
+.vue-tel-input-custom.is-invalid :deep(.vue-tel-input) {
+  border-color: var(--destructive);
+}
+</style>

@@ -11,7 +11,7 @@ module Types
     field :created_at, GraphQL::Types::ISO8601DateTime, null: false
     field :updated_at, GraphQL::Types::ISO8601DateTime, null: false
 
-    # Resolver methods to reach into Patient model
+    # Resolver methods to reach into Patient model or User model
     def first_name
       object.patient&.first_name
     end
@@ -21,7 +21,7 @@ module Types
     end
 
     def phone_number
-      object.patient&.phone_number
+      object.patient&.phone_number || object.read_attribute(:phone_number)
     end
   end
 end
