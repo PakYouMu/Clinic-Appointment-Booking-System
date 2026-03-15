@@ -1,14 +1,14 @@
-# Vue 3 + Rails 8 + GraphQL Boilerplate (Monorepo)
+# Mustard Clinic Appointment Booking System
 
-A secure, performance-oriented monorepo boilerplate featuring a Rails 8 GraphQL API and two separate Vue 3 frontends (Client and Admin).
+Mustard Clinic is a functional MVP Web Application designed to streamline the clinic appointment process. This high-performance monorepo provides a seamless experience for both patients and staff, featuring a robust Rails 8 backend and specialized Vue 3 frontends for client booking and administrative management.
 
 ## Architecture
 
-This is a monorepo containing:
+This monorepo is structured for scalability and clear separation of concerns:
 
-- **[`backend/`](./backend)**: Rails 8 API with [GraphQL-Ruby](https://graphql-ruby.org/) and JWT authentication via HttpOnly cookies.
-- **[`client/`](./client)**: Vue 3 + Apollo Client + Tailwind CSS v4 + Shadcn Vue (Consumer Frontend).
-- **[`admin/`](./admin)**: Vue 3 + Apollo Client + Tailwind CSS v4 + Shadcn Vue (Admin Dashboard).
+- **[`backend/`](./backend)**: Rails 8 API with [GraphQL-Ruby](https://graphql-ruby.org/) and secure JWT authentication via `HttpOnly` cookies.
+- **[`client/`](./client)**: Vue 3 + Apollo Client + Tailwind CSS v4 + Shadcn Vue. The patient-facing booking portal.
+- **[`admin/`](./admin)**: Vue 3 + Apollo Client + Tailwind CSS v4 + Shadcn Vue. The internal staff management dashboard.
 
 ## 🛠 Tech Stack
 
@@ -16,76 +16,76 @@ This is a monorepo containing:
 - **Ruby 3.4.8** & **Rails 8.1**
 - **GraphQL**: Type-safe API with self-documenting schema.
 - **Authentication**: JWT-based, secured with `HttpOnly`, `SameSite=Strict` cookies.
-- **Database**: PostgreSQL (default Rails 8 config).
+- **Background Jobs**: Solid Queue (Rails 8 default).
+- **Database**: PostgreSQL.
 
 ### Frontend (Client & Admin)
-- **Vue 3** (Composition API with `<script setup>`).
-- **Apollo Client**: Integrated with Vue for GraphQL data fetching and caching.
-- **Vite**: Ultra-fast build tool and dev server.
-- **Tailwind CSS v4**: Built-in CSS variables and high performance.
-- **Shadcn Vue**: High-quality, accessible UI components.
-- **Vue Router**: Client-side routing with authentication guards.
+- **Vue 3**: Composition API with `<script setup>`.
+- **Styling**: Tailwind CSS v4 + Shadcn Vue (Reka UI).
+- **Data Fetching**: Apollo Client (Vue Apollo Composable).
+- **Build Tool**: Vite for near-instant HMR.
 
-## Quick Start
+## Local Setup
 
 ### 1. Prerequisites
-- Ruby 3.4.8
-- Node.js (Latest LTS)
-- PostgreSQL
+- **Ruby 3.4.8**
+- **Node.js** (Latest LTS recommended)
+- **PostgreSQL** (Ensure the service is running)
 
-### 2. Setup (Automatic)
-Install dependencies for all three projects at once from the root directory:
+### 2. Automatic Installation
+Install all dependencies (npm packages and Ruby gems) for all projects with one command:
 ```bash
 npm run install:all
 ```
 
-### 3. Launching the Project
+### 3. Database Initialization
+Prepare the PostgreSQL database and seed initial clinic data (Doctors & Schedules):
+```bash
+cd backend
+bin/rails db:prepare
+```
 
-#### **All-in-one (Recommended)**
-Start the backend and both frontends simultaneously with a single command:
+### 4. Development
+Start all services (Backend, Worker, Client, Admin) concurrently:
 ```bash
 npm run dev
 ```
-*Alternatively, use the shell script:* `./launch.sh`
 
-#### **Individual Projects**
-If you want to work on only one part of the monorepo, you can use these shortcuts from the root:
-- **Client only**: `npm run dev:client` (Port 5173)
-- **Admin only**: `npm run dev:admin` (Port 5174)
-- **Backend only**: `npm run dev:backend` (Port 3000)
-
-> [!NOTE]
-> Even though the backend is a **Ruby on Rails** application, the root `package.json` includes the `dev:backend` script as a convenient wrapper for `cd backend && bin/rails s`. You can still run it the "traditional" way if you prefer.
+The system will be available at:
+- **Patient Portal**: [http://localhost:5173](http://localhost:5173)
+- **Admin Dashboard**: [http://localhost:5174](http://localhost:5174)
+- **GraphQL API**: [http://localhost:3000/graphql](http://localhost:3000/graphql)
 
 ---
 
-## Hosting Strategy
+## Individual Commands
 
-### **Frontends (Render)**
-- **Client & Admin**: Deploy as two separate **Static Sites** on Render.
-- **Root Directory**: Set to `client` for the first and `admin` for the second.
-- **Build Command**: `npm install && npm run build`.
-- **Publish Directory**: `dist`.
-- **Custom Domains**: Point your two domain slots to these sites (e.g., `www.client.example.com` and `www.admin.example.com`).
+If you need to run specific parts of the system:
 
-### **Backend (Railway / Fly.io / Railway)**
-- **Rails API**: Deploy the `backend` folder as a Web Service.
-- **Database**: Use a managed PostgreSQL instance provided by the platform.
-- **Environment Variables**:
-  - `DATABASE_URL`: Your Postgres connection string.
-  - `SECRET_KEY_BASE`: A long, random string for JWT signing.
-  - `FRONTEND_URL`: `https://www.client.example.com`
-  - `ADMIN_FRONTEND_URL`: `https://www.admin.example.com`
+| Service | Command | Port |
+| :--- | :--- | :--- |
+| **All-in-One** | `npm run dev` | All |
+| **Backend** | `npm run dev:backend` | 3000 |
+| **Worker** | `npm run dev:worker` | - |
+| **Client** | `npm run dev:client` | 5173 |
+| **Admin** | `npm run dev:admin` | 5174 |
 
-### **Why this works:**
-1. **Render (Hobby)**: You use your 2 custom domain slots for the two frontends, ensuring your high-traffic user site and your admin panel both look professional.
-2. **External Backend**: By hosting the API elsewhere, you avoid hitting Render's "Static Site" limits and can scale the Rails process independently.
-3. **Security**: Both frontends will securely communicate with the external API via GraphQL, provided the `cors.rb` configuration is updated with the production URLs.
+*Note: You can also use `./launch.sh` for a shell-script based startup.*
 
-## Authentication Flow
+## Security & Authentication
 
-The boilerplate uses a secure cookie-based JWT flow:
-1. **Sign Up/In**: Mutation sets an `_vue_boilerplate_token` HttpOnly cookie.
-2. **Persistence**: The browser automatically sends the cookie with every GraphQL request (via `credentials: 'include'`).
-3. **Guard**: Vue Router checks the `currentUser` query before entering protected routes.
-4. **Sign Out**: Mutation clears the cookie server-side.
+Mustard Clinic uses a secure, stateless JWT flow:
+1. **Mutation**: Login/Signup mutations set a `_vue_boilerplate_token` (to be renamed `_mustard_clinic_token` in future updates) as an `HttpOnly` cookie.
+2. **Persistence**: Apollo Client is configured with `credentials: 'include'` to automatically send this cookie.
+3. **Cross-Origin**: CORS is configured to allow requests from the specific frontend domains.
+
+## Repository Structure
+
+```text
+.
+├── admin/          # Admin management frontend
+├── backend/        # Rails 8 GraphQL API
+├── client/         # Patient booking frontend
+├── tasks/          # PRDs and project tracking
+└── AGENTS.md       # Design system and brand guidelines
+```
