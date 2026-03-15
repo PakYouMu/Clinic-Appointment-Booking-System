@@ -9,6 +9,9 @@
 - **Elegant/Premium**: Refined, sophisticated aesthetic that feels polished and high-quality
 - Clean visual hierarchy with thoughtful spacing and typography
 - Subtle, refined interactions that feel premium without being flashy
+- **Purposeful**: Every element should have a purpose; avoid unnecessary decoration
+- Logo should be italicized and bold; should be placed at the top left of the page.
+- Logo and brand name is "Mustard Clinic".
 
 ### Aesthetic Direction
 - **Theme**: Supports both light and dark modes with consistent quality in each
@@ -19,6 +22,7 @@
   - Uses semantic tokens: card, popover, primary, secondary, muted, destructive, border, etc.
 - **Typography**: System fonts (no custom font set yet - consider adding refined sans-serif)
 - **Spacing**: 0.625rem border radius, standard Tailwind spacing scale
+- **Icons**: Icons over emojis.
 
 ### Design Principles
 1. **Refined Simplicity** - Every element should have a purpose; avoid unnecessary decoration

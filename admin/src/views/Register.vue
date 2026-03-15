@@ -1,13 +1,19 @@
 <template>
   <div class="flex min-h-screen items-center justify-center bg-background px-4">
     <Card class="w-full max-w-md">
-      <CardHeader class="space-y-1 text-center">
-        <CardTitle class="text-2xl font-bold tracking-tight">
-          Create an account
-        </CardTitle>
-        <CardDescription class="text-muted-foreground">
-          Enter your details below to get started
-        </CardDescription>
+      <CardHeader class="space-y-4 text-center">
+        <div class="flex items-center justify-center gap-3">
+          <div class="h-10 w-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-italic text-xl">M</div>
+          <span class="text-2xl font-bold italic tracking-tighter">Mustard Clinic</span>
+        </div>
+        <div>
+          <CardTitle class="text-xl font-bold tracking-tight">
+            Create an account
+          </CardTitle>
+          <CardDescription class="text-muted-foreground">
+            Enter your details below to get started
+          </CardDescription>
+        </div>
       </CardHeader>
 
       <CardContent>
@@ -57,22 +63,34 @@
             />
           </div>
 
+          <div class="space-y-2 py-2">
+            <div class="flex items-center justify-between">
+              <Label for="register-secret" class="text-primary font-bold">Admin Secret Code</Label>
+              <span class="text-[10px] text-muted-foreground uppercase font-black px-1.5 py-0.5 bg-muted rounded">Required</span>
+            </div>
+            <Input
+              id="register-secret"
+              v-model="form.adminSecret"
+              type="password"
+              placeholder="Enter internal registration code"
+              required
+            />
+            <p class="text-[10px] text-muted-foreground italic">
+              This code is required for internal clinic staff registration.
+            </p>
+          </div>
+
           <Button type="submit" class="w-full" size="lg" :disabled="submitting">
-            <span v-if="submitting" class="animate-spin mr-2">⏳</span>
-            {{ submitting ? 'Creating account…' : 'Sign Up' }}
+            <Loader2 v-if="submitting" class="animate-spin mr-2 h-4 w-4" />
+            {{ submitting ? 'Authorizing & Creating…' : 'Register Admin Account' }}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter class="flex justify-center">
-        <p class="text-sm text-muted-foreground">
-          Already have an account?
-          <router-link
-            to="/login"
-            class="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Sign in
-          </router-link>
+      <CardFooter class="flex flex-col gap-2 pt-0 pb-6">
+        <div class="h-px w-full bg-border"></div>
+        <p class="text-[10px] text-muted-foreground text-center px-6">
+          Authorized User Access Only. All registration attempts are logged for security auditing.
         </p>
       </CardFooter>
     </Card>
@@ -87,6 +105,7 @@ import { useAuth } from '@/composables/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-vue-next'
 import {
   Card,
   CardContent,
@@ -102,7 +121,8 @@ const { signUp } = useAuth()
 const form = reactive({
   email: '',
   password: '',
-  passwordConfirmation: ''
+  passwordConfirmation: '',
+  adminSecret: ''
 })
 
 const submitting = ref(false)
@@ -121,7 +141,8 @@ async function handleSubmit() {
     await signUp({
       email: form.email,
       password: form.password,
-      passwordConfirmation: form.passwordConfirmation
+      passwordConfirmation: form.passwordConfirmation,
+      adminSecret: form.adminSecret
     })
     router.push({ name: 'Home' })
   } catch (err) {

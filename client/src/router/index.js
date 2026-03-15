@@ -4,9 +4,33 @@ import { useAuth } from '../composables/useAuth'
 const routes = [
     {
         path: '/',
-        name: 'Home',
-        component: () => import('../views/Home.vue'),
-        meta: { requiresAuth: true }
+        component: () => import('../components/layouts/PatientLayout.vue'),
+        children: [
+            {
+                path: '',
+                name: 'Home',
+                component: () => import('../views/Home.vue'),
+                meta: { requiresAuth: false } // Homepage could be public to see the brand
+            },
+            {
+                path: 'doctors',
+                name: 'Doctors',
+                component: () => import('../views/Doctors.vue'),
+                meta: { requiresAuth: false }
+            },
+            {
+                path: 'book',
+                name: 'BookAppointment',
+                component: () => import('../views/BookAppointment.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'dashboard',
+                name: 'PatientDashboard',
+                component: () => import('../views/PatientDashboard.vue'),
+                meta: { requiresAuth: true }
+            }
+        ]
     },
     {
         path: '/login',
@@ -38,7 +62,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAuth && !isAuthenticated.value) {
         next({ name: 'Login' })
     } else if (to.meta.guest && isAuthenticated.value) {
-        next({ name: 'Home' })
+        next({ name: 'PatientDashboard' })
     } else {
         next()
     }

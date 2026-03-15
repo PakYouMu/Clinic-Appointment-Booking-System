@@ -1,13 +1,19 @@
 <template>
   <div class="flex min-h-screen items-center justify-center bg-background px-4">
     <Card class="w-full max-w-md">
-      <CardHeader class="space-y-1 text-center">
-        <CardTitle class="text-2xl font-bold tracking-tight">
-          Welcome back
-        </CardTitle>
-        <CardDescription class="text-muted-foreground">
-          Sign in to your account to continue
-        </CardDescription>
+      <CardHeader class="space-y-4 text-center">
+        <div class="flex items-center justify-center gap-3">
+          <div class="h-10 w-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-italic text-xl">M</div>
+          <span class="text-2xl font-bold italic tracking-tighter">Mustard Clinic</span>
+        </div>
+        <div>
+          <CardTitle class="text-xl font-bold tracking-tight">
+            Welcome back
+          </CardTitle>
+          <CardDescription class="text-muted-foreground">
+            Sign in to your account to continue
+          </CardDescription>
+        </div>
       </CardHeader>
 
       <CardContent>
@@ -44,21 +50,15 @@
           </div>
 
           <Button type="submit" class="w-full" size="lg" :disabled="submitting">
-            <span v-if="submitting" class="animate-spin mr-2">⏳</span>
+            <Loader2 v-if="submitting" class="animate-spin mr-2 h-4 w-4" />
             {{ submitting ? 'Signing in…' : 'Sign In' }}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter class="flex justify-center">
-        <p class="text-sm text-muted-foreground">
-          Don't have an account?
-          <router-link
-            to="/register"
-            class="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Sign up
-          </router-link>
+      <CardFooter class="flex justify-center border-t bg-muted/20">
+        <p class="text-xs text-muted-foreground italic">
+          Admin Portal. Authorized Access Only.
         </p>
       </CardFooter>
     </Card>
@@ -73,6 +73,7 @@ import { useAuth } from '@/composables/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-vue-next'
 import {
   Card,
   CardContent,
