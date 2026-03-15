@@ -16,12 +16,12 @@ services:
         sync: false
       - key: FRONTEND_URL
         fromService:
-          type: static
+          type: web
           name: mustard-clinic-client
           property: url
       - key: ADMIN_FRONTEND_URL
         fromService:
-          type: static
+          type: web
           name: mustard-clinic-admin
           property: url
 
