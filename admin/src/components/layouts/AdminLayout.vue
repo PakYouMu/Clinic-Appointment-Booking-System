@@ -65,9 +65,9 @@
 
       <div class="p-4 md:p-8">
         <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
+          <div class="page-fade-in" :key="navKey">
             <component :is="Component" />
-          </transition>
+          </div>
         </router-view>
       </div>
     </main>
@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, markRaw } from 'vue'
+import { ref, markRaw, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { Button } from '@/components/ui/button'
@@ -89,8 +89,15 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const route = useRoute()
 const { currentUser, signOut } = useAuth()
 const sidebarOpen = ref(false)
+
+// Incrementing key guarantees a fresh component on every navigation
+const navKey = ref(0)
+watch(() => route.fullPath, () => {
+  navKey.value++
+})
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: markRaw(LayoutDashboard) },
@@ -106,12 +113,19 @@ async function handleSignOut() {
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+/* CSS-only fade-in on mount — avoids Vue <transition> lifecycle issues */
+.page-fade-in {
+  animation: fadeIn 0.25s ease-out;
 }
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

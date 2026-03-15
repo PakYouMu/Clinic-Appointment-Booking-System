@@ -10,13 +10,13 @@
       <div class="flex items-center gap-2">
         <div class="flex items-center rounded-md border bg-card p-1">
           <Button variant="ghost" size="icon" class="h-8 w-8" @click="changeWeek(-1)">
-            <span>←</span>
+            <ChevronLeft class="h-4 w-4" />
           </Button>
           <div class="px-3 text-sm font-semibold min-w-[150px] text-center">
             {{ weekRangeDisplay }}
           </div>
           <Button variant="ghost" size="icon" class="h-8 w-8" @click="changeWeek(1)">
-            <span>→</span>
+            <ChevronRight class="h-4 w-4" />
           </Button>
         </div>
         <Button variant="outline" size="sm" @click="goToToday">Today</Button>
@@ -60,37 +60,48 @@
             </p>
           </div>
 
-          <!-- Time rows: for each hour, render 1 time-label + 7 day cells -->
+          <!-- Time rows -->
           <template v-for="hour in hours" :key="hour">
-            <!-- Time label cell (sticky left) -->
             <div class="calendar-time-label">
               <span>{{ formatTime(hour) }}</span>
             </div>
 
-            <!-- Day cells for this hour -->
             <div 
               v-for="(day, dayIdx) in weekDays" 
               :key="hour + '-' + dayIdx" 
               :class="['calendar-cell', isToday(day.date) ? 'is-today' : '']"
             >
-              <!-- Appointment blocks positioned within the cell if they start this hour -->
+              <!-- ≤ 4 appointments: show individual cards -->
+              <template v-if="getAppointmentsForCell(day.date, hour).length <= 4">
+                <div 
+                  v-for="appt in getAppointmentsForCell(day.date, hour)" 
+                  :key="appt.id"
+                  :style="getAppointmentCellStyle(appt)"
+                  :class="[
+                    'absolute left-1 right-1 rounded p-1.5 text-[9px] font-bold border-l-4 shadow-sm transition-all hover:z-30 hover:scale-[1.02] cursor-pointer overflow-hidden',
+                    statusColors(appt.status).card
+                  ]"
+                  @click="selectedAppt = appt"
+                >
+                  <div class="flex items-start justify-between">
+                    <span class="truncate pr-1">Dr. {{ appt.doctor.lastName }}</span>
+                    <span>{{ formatTimeOnly(appt.startDatetime) }}</span>
+                  </div>
+                  <div class="truncate text-[10px] leading-tight mt-0.5">
+                    {{ appt.patient.firstName }} {{ appt.patient.lastName }}
+                  </div>
+                </div>
+              </template>
+
+              <!-- > 4 appointments: show aggregated badge -->
               <div 
-                v-for="appt in getAppointmentsForCell(day.date, hour)" 
-                :key="appt.id"
-                :style="getAppointmentCellStyle(appt)"
-                :class="[
-                  'absolute left-1 right-1 rounded p-1.5 text-[9px] font-bold border-l-4 shadow-sm transition-all hover:z-30 hover:scale-[1.02] cursor-pointer overflow-hidden',
-                  statusColors(appt.status).card
-                ]"
-                @click="selectedAppt = appt"
+                v-else
+                class="absolute inset-1 rounded-md bg-primary/10 border border-primary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-primary/20 transition-colors"
+                @click="openBulkModal(day.date, hour)"
               >
-                <div class="flex items-start justify-between">
-                  <span class="truncate pr-1">Dr. {{ appt.doctor.lastName }}</span>
-                  <span>{{ formatTimeOnly(appt.startDatetime) }}</span>
-                </div>
-                <div class="truncate text-[10px] leading-tight mt-0.5">
-                  {{ appt.patient.firstName }} {{ appt.patient.lastName }}
-                </div>
+                <CalendarClock class="h-4 w-4 text-primary mb-0.5" />
+                <span class="text-xs font-black text-primary">{{ getAppointmentsForCell(day.date, hour).length }}</span>
+                <span class="text-[8px] font-bold text-primary/70 uppercase tracking-widest">Appts</span>
               </div>
             </div>
           </template>
@@ -98,7 +109,7 @@
       </div>
     </Card>
 
-    <!-- Appointment Detail Modal -->
+    <!-- Single Appointment Detail Modal -->
     <div v-if="selectedAppt" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" @click.self="selectedAppt = null">
       <Card class="w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
         <CardHeader class="pb-2 border-b">
@@ -106,7 +117,9 @@
              <span :class="['px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-widest', statusColors(selectedAppt.status).badge]">
                {{ selectedAppt.status }}
              </span>
-             <Button variant="ghost" size="icon" class="h-6 w-6" @click="selectedAppt = null">✕</Button>
+             <Button variant="ghost" size="icon" class="h-6 w-6" @click="selectedAppt = null">
+               <X class="h-3.5 w-3.5" />
+             </Button>
           </div>
           <CardTitle class="text-xl mt-2">Appointment Details</CardTitle>
           <CardDescription>{{ formatLongDate(selectedAppt.startDatetime) }}</CardDescription>
@@ -134,16 +147,122 @@
         </CardFooter>
       </Card>
     </div>
+
+    <!-- Bulk Appointments Modal (>4 in a cell) -->
+    <div v-if="bulkModal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" @click.self="closeBulkModal">
+      <Card class="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+        <CardHeader class="pb-3 border-b shrink-0">
+          <div class="flex justify-between items-start">
+            <div>
+              <CardTitle class="text-xl">Appointments</CardTitle>
+              <CardDescription>
+                {{ bulkModal.dateLabel }} · {{ formatTime(bulkModal.hour) }} — {{ bulkModalAppointments.length }} total
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" class="h-7 w-7" @click="closeBulkModal">
+              <X class="h-4 w-4" />
+            </Button>
+          </div>
+
+          <!-- Sort controls -->
+          <div class="flex items-center gap-2 mt-3">
+            <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sort by</span>
+            <Button 
+              v-for="opt in sortOptions" :key="opt.key"
+              :variant="bulkModal.sortKey === opt.key ? 'default' : 'outline'" 
+              size="sm" 
+              class="h-7 text-xs"
+              @click="setBulkSort(opt.key)"
+            >
+              {{ opt.label }}
+              <component 
+                :is="bulkModal.sortKey === opt.key ? (bulkModal.sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown" 
+                class="h-3 w-3 ml-1" 
+              />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent class="py-3 overflow-y-auto flex-1 min-h-0">
+          <div class="space-y-2">
+            <div 
+              v-for="appt in paginatedBulkAppointments" 
+              :key="appt.id"
+              :class="[
+                'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md',
+                statusColors(appt.status).card, 'border-l-4'
+              ]"
+              @click="selectedAppt = appt; closeBulkModal()"
+            >
+              <!-- Time -->
+              <div class="text-center shrink-0 w-14">
+                <p class="text-sm font-black leading-tight">{{ formatTimeOnly(appt.startDatetime) }}</p>
+                <p class="text-[9px] text-muted-foreground">{{ appt.endDatetime ? formatTimeOnly(appt.endDatetime) : '' }}</p>
+              </div>
+
+              <div class="h-8 w-px bg-border shrink-0"></div>
+
+              <!-- Doctor -->
+              <div class="shrink-0 w-28">
+                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Doctor</p>
+                <p class="text-sm font-bold truncate">Dr. {{ appt.doctor.lastName }}</p>
+              </div>
+
+              <!-- Patient -->
+              <div class="flex-1 min-w-0">
+                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Patient</p>
+                <p class="text-sm font-bold truncate">{{ appt.patient.firstName }} {{ appt.patient.lastName }}</p>
+              </div>
+
+              <!-- Status badge -->
+              <span :class="['px-2 py-0.5 rounded text-[9px] uppercase font-black tracking-widest shrink-0', statusColors(appt.status).badge]">
+                {{ appt.status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Empty state (shouldn't happen, but just in case) -->
+          <p v-if="!bulkModalAppointments.length" class="text-sm text-muted-foreground text-center py-8">No appointments found.</p>
+        </CardContent>
+
+        <!-- Pagination -->
+        <CardFooter v-if="bulkTotalPages > 1" class="border-t px-4 py-3 shrink-0">
+          <div class="flex items-center justify-between w-full">
+            <p class="text-xs text-muted-foreground">
+              Page {{ bulkModal.page }} of {{ bulkTotalPages }}
+              <span class="text-muted-foreground/60"> · {{ bulkModalAppointments.length }} appointments</span>
+            </p>
+            <div class="flex items-center gap-1">
+              <Button 
+                variant="outline" size="icon" class="h-7 w-7" 
+                :disabled="bulkModal.page <= 1" 
+                @click="bulkModal.page--"
+              >
+                <ChevronLeft class="h-3.5 w-3.5" />
+              </Button>
+              <Button 
+                variant="outline" size="icon" class="h-7 w-7" 
+                :disabled="bulkModal.page >= bulkTotalPages" 
+                @click="bulkModal.page++"
+              >
+                <ChevronRight class="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_ADMIN_APPOINTMENTS_QUERY } from '@/graphql/appointments'
 import { GET_DOCTORS_QUERY } from '@/graphql/doctors'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { ChevronLeft, ChevronRight, X, CalendarClock, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 
 // --- State & Navigation ---
 const baseDate = ref(new Date())
@@ -162,7 +281,6 @@ const START_HOUR = 7
 const DEFAULT_END_HOUR = 19
 const CELL_HEIGHT = 80
 
-// Dynamic hours: auto-extend if appointments exist past 7 PM
 const hours = computed(() => {
   let maxHour = DEFAULT_END_HOUR
   if (appointments.value.length) {
@@ -236,7 +354,6 @@ function formatISO(date) {
 
 const isToday = (date) => new Date().toDateString() === date.toDateString()
 
-// Get appointments that START within a specific hour for a specific day
 const getAppointmentsForCell = (date, hour) => {
   const dayStr = formatISO(date)
   return appointments.value.filter(a => {
@@ -245,7 +362,6 @@ const getAppointmentsForCell = (date, hour) => {
   })
 }
 
-// Position within the cell (relative to the cell's top)
 const getAppointmentCellStyle = (appt) => {
   const start = new Date(appt.startDatetime)
   const end = appt.endDatetime ? new Date(appt.endDatetime) : new Date(start.getTime() + 15 * 60000)
@@ -285,23 +401,115 @@ const statusColors = (status) => {
     default: return { card: 'bg-primary/10 text-primary border-primary', badge: 'bg-primary text-white' }
   }
 }
+
+// =============================================================================
+// BULK MODAL — for cells with > 4 appointments
+// =============================================================================
+const BULK_PAGE_SIZE = 5
+
+const bulkModal = reactive({
+  open: false,
+  date: null,
+  hour: null,
+  dateLabel: '',
+  sortKey: 'time',   // 'time' | 'patientName' | 'doctorName'
+  sortDir: 'asc',    // 'asc' | 'desc'
+  page: 1
+})
+
+const sortOptions = [
+  { key: 'time', label: 'Time' },
+  { key: 'doctorName', label: 'Doctor' },
+  { key: 'patientName', label: 'Patient' }
+]
+
+function openBulkModal(date, hour) {
+  bulkModal.open = true
+  bulkModal.date = date
+  bulkModal.hour = hour
+  bulkModal.dateLabel = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  bulkModal.sortKey = 'time'
+  bulkModal.sortDir = 'asc'
+  bulkModal.page = 1
+}
+
+function closeBulkModal() {
+  bulkModal.open = false
+}
+
+function setBulkSort(key) {
+  if (bulkModal.sortKey === key) {
+    // Toggle direction
+    bulkModal.sortDir = bulkModal.sortDir === 'asc' ? 'desc' : 'asc'
+  } else {
+    bulkModal.sortKey = key
+    bulkModal.sortDir = 'asc'
+  }
+  bulkModal.page = 1
+}
+
+// All appointments for the bulk modal's cell, sorted
+const bulkModalAppointments = computed(() => {
+  if (!bulkModal.open || !bulkModal.date) return []
+  
+  const cellAppts = [...getAppointmentsForCell(bulkModal.date, bulkModal.hour)]
+
+  // Primary sort: by chosen key. Secondary sort: time then doctor last name
+  cellAppts.sort((a, b) => {
+    let cmp = 0
+    const dir = bulkModal.sortDir === 'asc' ? 1 : -1
+
+    switch (bulkModal.sortKey) {
+      case 'time': {
+        const tA = new Date(a.startDatetime).getTime()
+        const tB = new Date(b.startDatetime).getTime()
+        cmp = (tA - tB) * dir
+        if (cmp === 0) {
+          cmp = a.doctor.lastName.localeCompare(b.doctor.lastName)
+        }
+        break
+      }
+      case 'doctorName': {
+        cmp = a.doctor.lastName.localeCompare(b.doctor.lastName) * dir
+        if (cmp === 0) {
+          cmp = new Date(a.startDatetime).getTime() - new Date(b.startDatetime).getTime()
+        }
+        break
+      }
+      case 'patientName': {
+        cmp = a.patient.lastName.localeCompare(b.patient.lastName) * dir
+        if (cmp === 0) {
+          cmp = new Date(a.startDatetime).getTime() - new Date(b.startDatetime).getTime()
+        }
+        break
+      }
+    }
+    return cmp
+  })
+
+  return cellAppts
+})
+
+const bulkTotalPages = computed(() => Math.ceil(bulkModalAppointments.value.length / BULK_PAGE_SIZE))
+
+const paginatedBulkAppointments = computed(() => {
+  const start = (bulkModal.page - 1) * BULK_PAGE_SIZE
+  return bulkModalAppointments.value.slice(start, start + BULK_PAGE_SIZE)
+})
 </script>
 
 <style scoped>
-/* Scroll container */
 .calendar-scroll-container {
   max-height: 750px;
   overflow: auto;
   position: relative;
 }
 
-/* CSS Grid layout */
 .calendar-grid {
   display: grid;
   min-width: max-content;
 }
 
-/* Top-left corner: sticky in both directions */
 .calendar-corner {
   position: sticky;
   top: 0;
@@ -312,7 +520,6 @@ const statusColors = (status) => {
   border-right: 1px solid var(--border);
 }
 
-/* Day headers: sticky top */
 .calendar-day-header {
   position: sticky;
   top: 0;
@@ -330,7 +537,6 @@ const statusColors = (status) => {
   background-color: color-mix(in oklch, var(--primary), transparent 95%);
 }
 
-/* Time label: sticky left */
 .calendar-time-label {
   position: sticky;
   left: 0;
@@ -352,7 +558,6 @@ const statusColors = (status) => {
   border-radius: 0.25rem;
 }
 
-/* Day cells */
 .calendar-cell {
   position: relative;
   border-right: 1px solid var(--border);
