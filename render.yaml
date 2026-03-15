@@ -26,11 +26,11 @@ services:
           property: url
 
   # 2. Patient Portal
-  - type: static
+  - type: web
     name: mustard-clinic-client
-    env: static
+    runtime: static
     buildCommand: "cd client && npm install && npm run build"
-    staticPublishPath: "./client/dist"
+    publishDir: "./client/dist"
     envVars:
       - key: VITE_API_URL
         fromService:
@@ -40,11 +40,11 @@ services:
         suffix: "/graphql"
 
   # 3. Admin Dashboard
-  - type: static
+  - type: web
     name: mustard-clinic-admin
-    env: static
+    runtime: static
     buildCommand: "cd admin && npm install && npm run build"
-    staticPublishPath: "./admin/dist"
+    publishDir: "./admin/dist"
     envVars:
       - key: VITE_API_URL
         fromService:
