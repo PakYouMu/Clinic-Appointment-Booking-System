@@ -7,6 +7,7 @@ export const BOOK_APPOINTMENT_MUTATION = gql`
     $endDatetime: ISO8601DateTime!
     $contactNumber: String!
     $reasonForVisit: String
+    $sendEmail: Boolean
   ) {
     bookAppointment(
       input: {
@@ -15,6 +16,7 @@ export const BOOK_APPOINTMENT_MUTATION = gql`
         endDatetime: $endDatetime
         contactNumber: $contactNumber
         reasonForVisit: $reasonForVisit
+        sendEmail: $sendEmail
       }
     ) {
       appointment {

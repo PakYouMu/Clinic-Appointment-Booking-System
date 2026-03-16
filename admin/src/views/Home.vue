@@ -43,7 +43,7 @@
 
         <Card class="bg-card/50 backdrop-blur-md border-primary/10 transition-all hover:border-primary/30 hover:shadow-lg group">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Cancellations/No-Show</CardTitle>
+            <CardTitle class="text-sm font-medium">Cancellations/No Shows</CardTitle>
             <CircleX class="h-4 w-4 text-destructive group-hover:scale-110 transition-transform" />
           </CardHeader>
           <CardContent>
@@ -85,7 +85,7 @@
                 </div>
               </div>
               <span :class="['px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider', statusBadge(appt.status)]">
-                {{ appt.status }}
+                {{ formatStatus(appt.status) }}
               </span>
             </div>
             <p v-if="todayAppointments.length > 5" class="text-center text-xs text-muted-foreground pt-2">
@@ -218,6 +218,8 @@ const formatTime = (isoStr) => {
   const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
   return `${date}, ${time}`
 }
+
+const formatStatus = (status) => status ? status.replace(/_/g, ' ') : ''
 
 const statusBadge = (status) => {
   switch (status) {

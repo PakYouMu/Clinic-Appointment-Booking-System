@@ -29,8 +29,8 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Don't care if the mailer can't send.
-  config.action_mailer.raise_delivery_errors = false
+  # Care if the mailer can't send.
+  config.action_mailer.raise_delivery_errors = true
 
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
@@ -71,7 +71,7 @@ Rails.application.configure do
   # Use Solid Queue for background jobs
   config.active_job.queue_adapter = :solid_queue
 
-  # Use Letter Opener for visual email previews in development
+  # Use letter_opener for local email viewing
   config.action_mailer.delivery_method = :letter_opener
   config.action_mailer.perform_deliveries = true
 

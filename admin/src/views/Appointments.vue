@@ -79,7 +79,7 @@
                 </td>
                 <td class="p-4 align-middle">
                   <span :class="['px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider', statusBadge(appt.status)]">
-                    {{ appt.status }}
+                    {{ formatStatus(appt.status) }}
                   </span>
                 </td>
                 <td class="p-4 align-middle text-right space-x-1">
@@ -100,7 +100,7 @@
                       @click="handleStatusUpdate(appt.id, 'no_show')"
                       :disabled="submitting === appt.id"
                     >
-                      No-Show
+                      No Show
                     </Button>
                     <Button 
                       variant="outline" 
@@ -171,7 +171,7 @@
           :variant="pendingStatus === 'cancelled' ? 'destructive' : 'default'"
           @click="confirmStatusUpdate"
         >
-          Yes, {{ pendingStatus === 'completed' ? 'Complete' : pendingStatus === 'no_show' ? 'Mark No-Show' : 'Cancel' }}
+          Yes, {{ pendingStatus === 'completed' ? 'Complete' : pendingStatus === 'no_show' ? 'Mark No Show' : 'Cancel' }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -234,6 +234,8 @@ const formatDateTime = (isoStr) => {
     time: d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
   }
 }
+
+const formatStatus = (status) => status ? status.replace(/_/g, ' ') : ''
 
 const statusBadge = (status) => {
   switch (status) {

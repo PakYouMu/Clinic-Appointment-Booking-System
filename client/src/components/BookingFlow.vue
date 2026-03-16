@@ -197,6 +197,18 @@
           <div v-if="submissionError" class="bg-destructive/10 text-destructive p-4 rounded border border-destructive/20 text-sm font-medium">
             {{ submissionError }}
           </div>
+          
+          <div class="flex items-center space-x-2 pt-2">
+            <input 
+              type="checkbox" 
+              id="sendEmail" 
+              v-model="bookingData.sendEmail"
+              class="h-4 w-4 rounded border-primary text-primary focus:ring-primary shadow-sm"
+            >
+            <label for="sendEmail" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Send confirmation to my email
+            </label>
+          </div>
         </CardContent>
         <CardFooter class="flex justify-between border-t bg-muted/20 py-4">
           <Button variant="outline" @click="prevStep" :disabled="submittingBooking">Back</Button>
@@ -227,8 +239,10 @@
 </template>
 
 <script setup>
+import emailjs from '@emailjs/browser'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import { GET_DOCTORS_QUERY, GET_AVAILABLE_SLOTS_QUERY } from '@/graphql/queries'
 import { BOOK_APPOINTMENT_MUTATION } from '@/graphql/mutations'
@@ -252,6 +266,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const { currentUser } = useAuth()
 const currentStep = ref(1)
 
 const bookingData = ref({
@@ -259,7 +274,8 @@ const bookingData = ref({
   date: '',
   time: '',
   contact: '',
-  reason: ''
+  reason: '',
+  sendEmail: false
 })
 
 // Phone input state
@@ -398,7 +414,8 @@ const submitBooking = async () => {
       startDatetime: startObj.toISOString(),
       endDatetime: endObj.toISOString(),
       contactNumber: bookingData.value.contact,
-      reasonForVisit: bookingData.value.reason
+      reasonForVisit: bookingData.value.reason,
+      sendEmail: bookingData.value.sendEmail
     }
 
     const res = await bookAppointmentMutation(variables)
@@ -409,6 +426,39 @@ const submitBooking = async () => {
     } else {
       // Success!
       currentStep.value = 5 // Show success state
+      
+      // Send EmailJS if checked
+      if (bookingData.value.sendEmail) {
+        try {
+          const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID
+          const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+          const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+          
+          if (serviceId && serviceId !== "your_emailjs_service_id") {
+             const userEmail = currentUser.value?.email || "patient-email@test.com"
+             const userName = currentUser.value?.firstName 
+               ? `${currentUser.value.firstName} ${currentUser.value.lastName}` 
+               : "Patient"
+
+             const templateParams = {
+               patient_name: userName,
+               doctor_name: selectedDoctorName.value,
+               date: formattedDate.value,
+               time: bookingData.value.time,
+               to_email: userEmail
+             }
+             
+             console.log("DEBUG: EmailJS Params", templateParams)
+             
+             await emailjs.send(serviceId, templateId, templateParams, publicKey)
+             console.log(`EmailJS sent to ${userEmail}!`)
+          } else {
+             console.log("EmailJS keys not configured or using placeholders. Skipping email.")
+          }
+        } catch (e) {
+          console.error("EmailJS Failed: ", e.text)
+        }
+      }
     }
   } catch (err) {
     console.error("Booking failed:", err)

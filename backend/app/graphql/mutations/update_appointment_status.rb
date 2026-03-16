@@ -9,7 +9,7 @@ module Mutations
     def resolve(appointment_id:, status:)
       user = context[:current_user]
       
-      # Security: Only admins can arbitarily change status to completed/no-show
+      # Security: Only admins can arbitarily change status to completed/no show
       unless user&.admin?
         return { appointment: nil, errors: ["Unauthorized. Admin access required."] }
       end

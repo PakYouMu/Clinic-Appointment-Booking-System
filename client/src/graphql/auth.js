@@ -37,6 +37,8 @@ export const CURRENT_USER_QUERY = gql`
     currentUser {
       id
       email
+      firstName
+      lastName
     }
   }
 `

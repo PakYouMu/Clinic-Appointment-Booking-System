@@ -115,7 +115,7 @@
         <CardHeader class="pb-2 border-b">
           <div class="flex justify-between items-start">
              <span :class="['px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-widest', statusColors(selectedAppt.status).badge]">
-               {{ selectedAppt.status }}
+               {{ formatStatus(selectedAppt.status) }}
              </span>
              <Button variant="ghost" size="icon" class="h-6 w-6" @click="selectedAppt = null">
                <X class="h-3.5 w-3.5" />
@@ -216,7 +216,7 @@
 
               <!-- Status badge -->
               <span :class="['px-2 py-0.5 rounded text-[9px] uppercase font-black tracking-widest shrink-0', statusColors(appt.status).badge]">
-                {{ appt.status }}
+                {{ formatStatus(appt.status) }}
               </span>
             </div>
           </div>
@@ -405,6 +405,8 @@ const formatLongDate = (isoStr) => {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit'
   })
 }
+
+const formatStatus = (status) => status ? status.replace(/_/g, ' ') : ''
 
 const statusColors = (status) => {
   switch (status) {
